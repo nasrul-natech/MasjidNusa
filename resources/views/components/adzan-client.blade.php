@@ -31,6 +31,30 @@ window.AdzanClient = (function () {
     let settings = null;
     let bannerTimeout = null;
     let currentSchedule = null;
+    let audioUnlocked = false;
+
+    async function unlockAudio() {
+        if (audioUnlocked) return true;
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+            audioUnlocked = true;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    function setupAudioUnlock() {
+        const handler = () => { unlockAudio(); };
+        ['click', 'touchstart', 'keydown'].forEach((ev) => {
+            document.addEventListener(ev, handler, { once: true, passive: true });
+        });
+    }
 
     function getSettings() {
         try {
@@ -53,10 +77,16 @@ window.AdzanClient = (function () {
         };
     }
 
-    function playSimpleTone(volume) {
+    async function playSimpleTone(volume) {
         try {
-            if (audioCtx) audioCtx.close();
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            await unlockAudio();
+            if (!audioCtx || audioCtx.state === 'closed') {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
             const gain = audioCtx.createGain();
             gain.gain.value = (volume || 80) / 100;
             gain.connect(audioCtx.destination);
@@ -77,17 +107,29 @@ window.AdzanClient = (function () {
             });
 
             const totalDur = melody.reduce((sum, [, d]) => sum + d, 0);
-            setTimeout(() => { if (audioCtx) audioCtx.close(); audioCtx = null; }, (totalDur + 1) * 1000);
-        } catch {}
+            setTimeout(() => {
+                if (audioCtx && audioCtx.state !== 'closed') {
+                    audioCtx.close();
+                }
+                audioCtx = null;
+            }, (totalDur + 1) * 1000);
+        } catch (e) {
+            console.warn('[Adzan] Simple tone failed:', e);
+        }
     }
 
-    function playAdzanAudio(type, volume) {
+    async function playAdzanAudio(type, volume) {
         try {
-            if (audioElement) audioElement.pause();
+            await unlockAudio();
+            if (audioElement) {
+                audioElement.pause();
+            }
             audioElement = new Audio(AUDIO_BASE + 'adzan-' + type + '.mp3');
             audioElement.volume = (volume || 80) / 100;
-            audioElement.play().catch(() => playSimpleTone(volume));
-        } catch { playSimpleTone(volume); }
+            await audioElement.play();
+        } catch {
+            await playSimpleTone(volume);
+        }
     }
 
     function showBanner(prayerKey, time, isReminder) {
@@ -126,19 +168,21 @@ window.AdzanClient = (function () {
         if (audioCtx) { audioCtx.close(); audioCtx = null; }
     }
 
-    function triggerAdzan(prayerKey, time, isReminder) {
+    async function triggerAdzan(prayerKey, time, isReminder) {
         const s = settings || getSettings() || defaultSettings();
 
         showBanner(prayerKey, time, isReminder);
 
-        if (s.sound_enabled && !isReminder) {
+        if (!s.sound_enabled) return;
+
+        if (!isReminder) {
             if (s.sound_type === 'simple') {
-                playSimpleTone(s.volume);
+                await playSimpleTone(s.volume);
             } else {
-                playAdzanAudio(s.sound_type, s.volume);
+                await playAdzanAudio(s.sound_type, s.volume);
             }
-        } else if (s.sound_enabled && isReminder) {
-            playSimpleTone(Math.min(s.volume, 60));
+        } else {
+            await playSimpleTone(Math.min(s.volume, 60));
         }
     }
 
@@ -220,6 +264,8 @@ window.AdzanClient = (function () {
             saveSettings(settings);
         }
 
+        setupAudioUnlock();
+
         const closeBtn = document.getElementById('adzan-banner-close');
         closeBtn?.addEventListener('click', hideBanner);
 
@@ -233,7 +279,6 @@ window.AdzanClient = (function () {
 
         await fetchAndSchedule();
 
-        // Refresh timers setiap jam untuk antisipasi perubahan hari
         setInterval(() => fetchAndSchedule(), 3600000);
     }
 
@@ -241,6 +286,10 @@ window.AdzanClient = (function () {
         init,
         reload: fetchAndSchedule,
         triggerAdzan,
+        testSound: async function () {
+            await unlockAudio();
+            await triggerAdzan('subuh', '--:--', false);
+        },
         stopAudio,
         hideBanner,
         getSettings,

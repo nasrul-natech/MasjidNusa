@@ -1,20 +1,15 @@
 /**
  * PWA Install Prompt Manager
  *
- * Android (Chrome / Edge / Samsung / Opera):
- *   Popup muncul HANYA setelah beforeinstallprompt siap → tombol langsung trigger instal native.
- *
- * iOS (Safari):
- *   Popup + panduan Add to Home Screen (iOS tidak mendukung instal programmatic).
+ * - Tampil setiap refresh/navigasi (kecuali sudah install atau dismiss sesi ini)
+ * - Android: tombol Instal aktif setelah beforeinstallprompt siap
+ * - iOS: panduan Add to Home Screen
  */
 
 const PWA_INSTALLED_KEY = 'masjidnusa_pwa_installed';
 const PWA_SESSION_KEY   = 'masjidnusa_pwa_session_dismissed';
 
 let deferredPrompt = null;
-let androidPopupQueued = false;
-
-// ─── Deteksi platform ─────────────────────────────────────
 
 function isPWAInstalled() {
     return (
@@ -65,8 +60,6 @@ function getBaseUrl() {
     return meta?.content || '/';
 }
 
-// ─── Service Worker (syarat beforeinstallprompt di Android) ──
-
 async function ensureServiceWorker() {
     if (!('serviceWorker' in navigator)) return null;
 
@@ -79,7 +72,33 @@ async function ensureServiceWorker() {
     }
 }
 
-// ─── Popup UI ─────────────────────────────────────────────
+function updateInstallButton() {
+    const btn = document.getElementById('pwa-install-btn');
+    if (!btn || isIOS()) return;
+
+    if (deferredPrompt) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        btn.textContent = '';
+        btn.innerHTML = `
+            <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Instal Aplikasi
+        `;
+    } else {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        btn.innerHTML = `
+            <svg class="w-5 h-5 mr-2 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            Menyiapkan instalasi&hellip;
+        `;
+    }
+}
 
 function showInstallPopup() {
     const popup = document.getElementById('pwa-install-popup');
@@ -95,6 +114,7 @@ function showInstallPopup() {
     } else {
         iosContent.classList.add('hidden');
         androidContent.classList.remove('hidden');
+        updateInstallButton();
     }
 
     popup.classList.remove('hidden');
@@ -111,17 +131,6 @@ function hideInstallPopup() {
 function dismissPopup() {
     sessionStorage.setItem(PWA_SESSION_KEY, 'true');
     hideInstallPopup();
-}
-
-function showAndroidInstallPopup() {
-    if (!deferredPrompt || !shouldShowPopup() || isIOS()) return;
-
-    if (document.readyState === 'loading') {
-        androidPopupQueued = true;
-        return;
-    }
-
-    showInstallPopup();
 }
 
 async function triggerNativeInstall() {
@@ -142,12 +151,10 @@ async function triggerNativeInstall() {
     }
 }
 
-// ─── Tangkap event native SEBELUM DOM ready ───────────────
-
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    showAndroidInstallPopup();
+    updateInstallButton();
 });
 
 window.addEventListener('appinstalled', () => {
@@ -156,17 +163,10 @@ window.addEventListener('appinstalled', () => {
     hideInstallPopup();
 });
 
-// ─── Init setelah DOM ready ───────────────────────────────
-
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureServiceWorker();
 
-    if (androidPopupQueued && deferredPrompt) {
-        showAndroidInstallPopup();
-        androidPopupQueued = false;
-    }
-
-    if (isIOS() && shouldShowPopup()) {
+    if (shouldShowPopup()) {
         setTimeout(showInstallPopup, 1500);
     }
 
