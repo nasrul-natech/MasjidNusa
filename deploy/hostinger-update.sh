@@ -31,7 +31,13 @@ git checkout "$BRANCH"
 git pull origin "$BRANCH"
 
 echo "==> Composer..."
-"$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction
+if command -v composer >/dev/null 2>&1; then
+  composer install --no-dev --optimize-autoloader --no-interaction
+elif command -v composer2 >/dev/null 2>&1; then
+  composer2 install --no-dev --optimize-autoloader --no-interaction
+else
+  "$PHP_BIN" "$HOME/composer.phar" install --no-dev --optimize-autoloader --no-interaction
+fi
 
 echo "==> Migrate..."
 "$PHP_BIN" artisan migrate --force

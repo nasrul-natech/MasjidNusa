@@ -525,12 +525,15 @@ Tambahkan di **hPanel → Advanced → Cron Jobs**:
 ```bash
 php84 -v
 cd ~/domains/masjid.nusasuite.id/app
-php84 $(which composer) install --no-dev --optimize-autoloader
-php84 artisan config:clear
-php84 artisan key:generate --force
-php84 artisan migrate --force
-php84 artisan config:cache
+export PATH="/opt/alt/php84/usr/bin:$PATH"
+composer install --no-dev --optimize-autoloader
+php artisan config:clear
+php artisan key:generate --force
+php artisan migrate --force
+php artisan config:cache
 ```
+
+> **Penting:** Jangan pakai `php $(which composer)` — di Hostinger, `composer` adalah script bash, bukan file PHP.
 
 ---
 

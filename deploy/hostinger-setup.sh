@@ -57,11 +57,21 @@ ls -la public_html
 # ── 4. Composer ───────────────────────────────────────────────
 echo "==> [4/8] Composer install..."
 cd "$APP_DIR"
-if ! command -v composer >/dev/null 2>&1; then
-  echo "    composer tidak ditemukan — coba: $PHP_BIN ~/composer.phar install"
-  "$PHP_BIN" ~/composer.phar install --no-dev --optimize-autoloader --no-interaction
+# Hostinger: `composer` adalah bash wrapper — jangan pakai php $(which composer)
+if command -v composer >/dev/null 2>&1; then
+  composer install --no-dev --optimize-autoloader --no-interaction
+elif command -v composer2 >/dev/null 2>&1; then
+  composer2 install --no-dev --optimize-autoloader --no-interaction
+elif [ -f "$HOME/composer.phar" ]; then
+  "$PHP_BIN" "$HOME/composer.phar" install --no-dev --optimize-autoloader --no-interaction
 else
-  "$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction
+  echo "ERROR: composer tidak ditemukan. Install via hPanel atau download composer.phar"
+  exit 1
+fi
+
+if [ ! -f vendor/autoload.php ]; then
+  echo "ERROR: vendor/ tidak terbentuk — composer install gagal"
+  exit 1
 fi
 
 # ── 5. Environment ────────────────────────────────────────────
