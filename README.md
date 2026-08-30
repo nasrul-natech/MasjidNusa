@@ -445,6 +445,82 @@ routes/
 
 ---
 
+## Deploy ke Hostinger
+
+Struktur direktori di server (`~/domains/masjid.nusasuite.id/`):
+
+```
+masjid.nusasuite.id/
+├── app/              ← source Laravel (di luar web root, aman)
+│   ├── artisan
+│   ├── public/       ← entry point Laravel
+│   └── storage/
+└── public_html → app/public   ← symlink (web root Hostinger)
+```
+
+### Setup Awal (SSH ke server)
+
+```bash
+cd ~/domains/masjid.nusasuite.id
+
+# 1. Bersihkan placeholder Hostinger
+rm -f DO_NOT_UPLOAD_HERE
+rm -rf public_html
+
+# 2. Clone aplikasi ke folder app/
+git clone git@github.com:nasrul-natech/MasjidNusa.git app
+
+# 3. Symlink web root → Laravel public
+ln -s app/public public_html
+
+# 4. Setup Laravel
+cd app
+cp deploy/hostinger.env.example .env
+nano .env   # isi DB & kredensial production
+
+composer install --no-dev --optimize-autoloader
+php artisan key:generate
+php artisan storage:link
+chmod -R ug+rwx storage bootstrap/cache
+php artisan migrate --seed --force
+npm install && npm run build   # jika npm tersedia di server
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+```
+
+Atau jalankan script otomatis:
+
+```bash
+cd ~/domains/masjid.nusasuite.id
+git clone git@github.com:nasrul-natech/MasjidNusa.git app
+bash app/deploy/hostinger-setup.sh
+```
+
+### Update Rutin
+
+```bash
+bash ~/domains/masjid.nusasuite.id/app/deploy/hostinger-update.sh
+```
+
+### Cron Jobs (wajib)
+
+Tambahkan di **hPanel → Advanced → Cron Jobs**:
+
+```cron
+* * * * * cd ~/domains/masjid.nusasuite.id/app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### Catatan Hostinger
+
+| Item | Keterangan |
+|------|------------|
+| `public_html` | Harus symlink ke `app/public`, bukan copy manual |
+| `storage:link` | Buat `public/storage` → `storage/app/public` (upload user) |
+| `.env` | Hanya di server, jangan di-commit |
+| `APP_DEBUG` | Wajib `false` di production |
+| Database | Buat di hPanel, isi `DB_*` di `.env` |
+
+---
+
 ## Lisensi
 
 Proyek ini dikembangkan untuk **MasjidNusa**. Seluruh hak cipta dilindungi.
