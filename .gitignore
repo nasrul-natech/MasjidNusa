@@ -1,0 +1,97 @@
+# ── Environment & secrets ──────────────────────────────────────
+.env
+.env.*
+!.env.example
+.env.backup
+.env.production
+auth.json
+
+# ── Dependencies ───────────────────────────────────────────────
+/vendor/
+/node_modules/
+
+# ── Build & cache ──────────────────────────────────────────────
+/public/build/
+/public/hot
+/public/storage
+/bootstrap/cache/*
+!bootstrap/cache/.gitignore
+.phpunit.result.cache
+.phpunit.cache
+.php-cs-fixer.cache
+.pint.cache
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+pnpm-debug.log
+
+# ── Storage (uploads, logs, sessions, compiled views) ──────────
+/storage/*.key
+/storage/pail
+/storage/logs/*
+!storage/logs/.gitignore
+/storage/framework/cache/*
+!storage/framework/cache/.gitignore
+!storage/framework/cache/data/
+/storage/framework/cache/data/*
+!storage/framework/cache/data/.gitignore
+/storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!storage/framework/testing/.gitignore
+/storage/framework/views/*
+!storage/framework/views/.gitignore
+/storage/app/*
+!storage/app/.gitignore
+!storage/app/public/
+/storage/app/public/*
+!storage/app/public/.gitignore
+/storage/app/private/*
+!storage/app/private/.gitignore
+
+# ── Database (local dev only) ──────────────────────────────────
+/database/*.sqlite*
+/database/*.sql
+
+# ── IDE & editor ───────────────────────────────────────────────
+/.idea/
+/.vscode/
+/.fleet/
+/.nova/
+/.zed/
+*.swp
+*.swo
+*~
+
+# ── Cursor (local AI / debug) ───────────────────────────────────
+/.cursor/
+
+# ── Referensi lokal (tidak perlu di repo) ──────────────────────
+/0. referensi/
+
+# ── macOS ──────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# ── OS / misc ──────────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# ── Testing & coverage ─────────────────────────────────────────
+/coverage/
+/.phpunit.cache/
+Homestead.json
+Homestead.yaml
+
+# ── Vite ───────────────────────────────────────────────────────
+vite.config.js.timestamp-*

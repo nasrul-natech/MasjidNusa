@@ -1,0 +1,377 @@
+@import 'tailwindcss';
+
+@layer base {
+    :root {
+        --color-primary: #064e3b;
+        --color-primary-dark: #022c22;
+        --color-primary-light: #166534;
+        --color-accent: #c59d3f;
+        --color-accent-dark: #a67c00;
+    }
+
+    html {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+        @apply bg-gray-50 text-gray-900;
+    }
+
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@layer components {
+    /* Primary Button */
+    .btn-primary {
+        @apply inline-flex items-center justify-center px-4 py-2 bg-emerald-700 text-white font-semibold rounded-xl hover:bg-emerald-800 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center px-4 py-2 bg-white text-emerald-700 font-semibold rounded-xl border border-emerald-700 hover:bg-emerald-50 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2;
+    }
+
+    .btn-danger {
+        @apply inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center px-4 py-2 text-gray-600 font-medium rounded-xl hover:bg-gray-100 active:scale-95 transition-all duration-150 focus:outline-none;
+    }
+
+    /* Form inputs */
+    .form-input {
+        @apply block w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-sm;
+    }
+
+    .form-label {
+        @apply block text-sm font-semibold text-gray-700 mb-1.5;
+    }
+
+    .form-error {
+        @apply text-red-500 text-xs mt-1;
+    }
+
+    /* Card */
+    .card {
+        @apply bg-white rounded-2xl shadow-sm border border-gray-100;
+    }
+
+    .card-header {
+        @apply px-6 py-4 border-b border-gray-100 flex items-center justify-between;
+    }
+
+    .card-body {
+        @apply p-6;
+    }
+
+    /* Badge */
+    .badge {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    }
+
+    .badge-success {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800;
+    }
+
+    .badge-warning {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800;
+    }
+
+    .badge-danger {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800;
+    }
+
+    .badge-info {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800;
+    }
+
+    .badge-gray {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700;
+    }
+
+    /* Admin Sidebar */
+    .sidebar-link {
+        @apply flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-150 text-sm font-medium;
+    }
+
+    .sidebar-link.active {
+        @apply bg-emerald-700 text-white hover:bg-emerald-800 hover:text-white shadow-sm;
+    }
+
+    .sidebar-section-title {
+        @apply pt-3 pb-1.5 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider;
+    }
+
+    /* Bottom Nav */
+    .bottom-nav-item {
+        @apply flex flex-col items-center justify-center gap-0.5 py-2 px-3 text-gray-500 hover:text-emerald-700 transition-colors flex-1;
+    }
+
+    .bottom-nav-item.active {
+        @apply text-emerald-700;
+    }
+
+    .bottom-nav-item--featured {
+        @apply -mt-4 pb-0.5;
+    }
+
+    .bottom-nav-featured-icon {
+        @apply w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-700 text-white flex items-center justify-center shadow-lg shadow-emerald-700/35 ring-4 ring-white;
+    }
+
+    .bottom-nav-featured-icon.is-active {
+        @apply from-emerald-700 to-emerald-800 shadow-emerald-800/40;
+    }
+
+    .bottom-nav-item--featured.active {
+        @apply text-emerald-800;
+    }
+
+    /* Toast */
+    .toast {
+        @apply fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white flex items-center gap-2 max-w-xs w-full;
+    }
+
+    /* Stat Card */
+    .stat-card {
+        @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4;
+    }
+
+    .stat-icon {
+        @apply w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0;
+    }
+
+    /* Action Buttons (small, for table rows and cards) */
+    .btn-action {
+        @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap;
+    }
+    .btn-action-blue {
+        @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap;
+    }
+    .btn-action-red {
+        @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors whitespace-nowrap;
+    }
+    .btn-action-green {
+        @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors whitespace-nowrap;
+    }
+    .btn-action-amber {
+        @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors whitespace-nowrap;
+    }
+    .btn-action-gray {
+        @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors whitespace-nowrap cursor-not-allowed;
+    }
+    .action-group {
+        @apply flex items-center gap-1 flex-nowrap;
+    }
+
+    /* Table */
+    .admin-table {
+        @apply w-full text-sm;
+    }
+
+    .admin-table-wrapper {
+        @apply overflow-x-auto -mx-0;
+    }
+
+    .admin-table thead tr {
+        @apply bg-gradient-to-r from-emerald-700 to-emerald-600 border-b-0;
+    }
+
+    .admin-table th {
+        @apply px-4 py-3.5 text-left text-xs font-semibold text-white uppercase tracking-wider whitespace-nowrap;
+    }
+
+    .admin-table th a {
+        @apply text-white;
+    }
+
+    .admin-table td {
+        @apply px-4 py-3 text-gray-700 border-b border-gray-100 align-middle;
+    }
+
+    .admin-table tbody tr {
+        @apply transition-colors;
+    }
+
+    .admin-table tbody tr:nth-child(even) {
+        @apply bg-gray-50/60;
+    }
+
+    .admin-table tbody tr:hover {
+        @apply bg-emerald-50/50;
+    }
+
+    .admin-table-toolbar {
+        @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4;
+    }
+
+    .admin-table-toolbar .form-label {
+        @apply text-xs mb-1;
+    }
+
+    .admin-table-toolbar .form-input {
+        @apply py-2 text-sm;
+    }
+
+    /* Mobile card-style table rows */
+    @media (max-width: 767px) {
+        .admin-table-mobile-cards thead {
+            @apply hidden;
+        }
+
+        .admin-table-mobile-cards tbody tr {
+            @apply block mb-3 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden;
+        }
+
+        .admin-table-mobile-cards tbody tr:nth-child(even) {
+            @apply bg-white;
+        }
+
+        .admin-table-mobile-cards td {
+            @apply block px-4 py-2 border-b border-gray-50 text-right;
+        }
+
+        .admin-table-mobile-cards td::before {
+            content: attr(data-label);
+            @apply float-left font-semibold text-gray-500 text-xs uppercase;
+        }
+
+        .admin-table-mobile-cards td:last-child {
+            @apply border-b-0 bg-gray-50/80;
+        }
+    }
+
+    /* Section heading */
+    .section-title {
+        @apply text-xl font-bold text-gray-900;
+    }
+
+    .section-subtitle {
+        @apply text-sm text-gray-500 mt-1;
+    }
+}
+
+/* ===== Mobile Font Size System ===== */
+/* button=11px, teks umum=11px, judul2=12px, menu mobile=10px, h1/h2=keep */
+@media (max-width: 767px) {
+    /* General text: 11px */
+    .text-sm,
+    .form-label,
+    .form-input,
+    p,
+    span,
+    a,
+    li,
+    td,
+    th,
+    label,
+    .card-body {
+        font-size: 11px !important;
+        line-height: 1.55 !important;
+    }
+
+    /* Buttons: 11px */
+    button,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-ghost,
+    [type="submit"] {
+        font-size: 11px !important;
+    }
+
+    /* Sub-headings / titles: 12px */
+    h3, h4, h5, h6,
+    .section-title,
+    .font-bold.text-gray-900,
+    .card-header h3,
+    .text-lg,
+    .text-base.font-bold {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* h1, h2 keep original (large headings) */
+    h1 { font-size: 20px !important; }
+    h2 { font-size: 16px !important; }
+
+    /* Mobile bottom nav menu: 10px */
+    .bottom-nav-item span {
+        font-size: 10px !important;
+    }
+
+    /* Admin table: mobile */
+    .admin-table th {
+        font-size: 10px !important;
+    }
+    .admin-table td {
+        font-size: 11px !important;
+    }
+
+    /* Badge: keep small */
+    .badge, [class*="badge-"] {
+        font-size: 10px !important;
+    }
+
+    /* Tiny text stays tiny */
+    .text-\[10px\],
+    .text-xs {
+        font-size: 10px !important;
+    }
+}
+
+@layer utilities {
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+
+    .safe-top {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .text-primary {
+        color: var(--color-primary);
+    }
+
+    .bg-primary {
+        background-color: var(--color-primary);
+    }
+
+    .border-primary {
+        border-color: var(--color-primary);
+    }
+
+    /* Scrollbar hide */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    /* Line clamp */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Public desktop typography */
+    @media (min-width: 768px) {
+        .public-section-title {
+            font-size: 1.125rem !important;
+        }
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
