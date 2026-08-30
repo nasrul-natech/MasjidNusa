@@ -119,15 +119,18 @@ window.AdzanClient = (function () {
     }
 
     async function playAdzanAudio(type, volume) {
+        const url = AUDIO_BASE + 'adzan-' + type + '.mp3';
         try {
             await unlockAudio();
             if (audioElement) {
                 audioElement.pause();
             }
-            audioElement = new Audio(AUDIO_BASE + 'adzan-' + type + '.mp3');
+            audioElement = new Audio(url);
             audioElement.volume = (volume || 80) / 100;
+            audioElement.preload = 'auto';
             await audioElement.play();
-        } catch {
+        } catch (err) {
+            console.warn('[Adzan] MP3 failed:', url, err);
             await playSimpleTone(volume);
         }
     }
@@ -286,9 +289,24 @@ window.AdzanClient = (function () {
         init,
         reload: fetchAndSchedule,
         triggerAdzan,
-        testSound: async function () {
+        previewSound: async function (type, volume) {
             await unlockAudio();
-            await triggerAdzan('subuh', '--:--', false);
+            showBanner('subuh', '--:--', false);
+            if (type === 'simple') {
+                await playSimpleTone(volume ?? 80);
+            } else {
+                await playAdzanAudio(type, volume ?? 80);
+            }
+        },
+        testSound: async function () {
+            const s = settings || getSettings() || defaultSettings();
+            await unlockAudio();
+            showBanner('subuh', '--:--', false);
+            if (s.sound_type === 'simple') {
+                await playSimpleTone(s.volume);
+            } else {
+                await playAdzanAudio(s.sound_type, s.volume);
+            }
         },
         stopAudio,
         hideBanner,

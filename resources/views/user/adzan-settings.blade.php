@@ -583,57 +583,50 @@
 
     const previewBtn = document.getElementById('preview-sound');
     let previewAudio = null;
-    let previewCtx = null;
 
     function getSelectedSoundType() {
         return document.querySelector('input[name="sound_type"]:checked')?.value || 'simple';
     }
 
-    function playSimpleTone(volume) {
-        if (previewCtx) previewCtx.close();
-        previewCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const gain = previewCtx.createGain();
-        gain.gain.value = volume / 100;
-        gain.connect(previewCtx.destination);
-
-        const notes = [523.25, 659.25, 783.99, 659.25, 523.25];
-        const duration = 0.4;
-        let time = previewCtx.currentTime;
-
-        notes.forEach((freq) => {
-            const osc = previewCtx.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            osc.connect(gain);
-            osc.start(time);
-            osc.stop(time + duration * 0.8);
-            time += duration;
-        });
-
-        setTimeout(() => {
-            if (previewCtx) previewCtx.close();
-            previewCtx = null;
-        }, notes.length * duration * 1000 + 500);
-    }
-
-    previewBtn?.addEventListener('click', () => {
+    previewBtn?.addEventListener('click', async () => {
         const type = getSelectedSoundType();
         const volume = parseInt(slider?.value || 80, 10);
 
-        if (previewAudio) { previewAudio.pause(); previewAudio = null; }
+        previewBtn.disabled = true;
+        const originalHtml = previewBtn.innerHTML;
+        previewBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Memutar…';
 
-        if (type === 'simple') {
-            playSimpleTone(volume);
-        } else {
+        try {
+            if (previewAudio) {
+                previewAudio.pause();
+                previewAudio = null;
+            }
+
+            if (window.AdzanClient?.previewSound) {
+                await AdzanClient.previewSound(type, volume);
+            } else {
+                throw new Error('AdzanClient belum siap');
+            }
+        } catch (err) {
+            console.error('[Adzan Preview]', err);
             const src = @json(asset('audio')) + '/adzan-' + type + '.mp3';
-            previewAudio = new Audio(src);
-            previewAudio.volume = volume / 100;
-            previewAudio.play().catch(() => {
-                if (typeof showToast === 'function') showToast('File audio adzan-' + type + '.mp3 belum tersedia', 'warning');
-            });
-            setTimeout(() => {
-                if (previewAudio) { previewAudio.pause(); previewAudio = null; }
-            }, 10000);
+            if (type === 'simple') {
+                if (typeof showToast === 'function') showToast('Gagal memutar suara. Muat ulang halaman.', 'warning');
+            } else {
+                previewAudio = new Audio(src);
+                previewAudio.volume = volume / 100;
+                try {
+                    await previewAudio.play();
+                    setTimeout(() => { previewAudio?.pause(); previewAudio = null; }, 10000);
+                } catch {
+                    if (typeof showToast === 'function') {
+                        showToast('Audio adzan-' + type + '.mp3 tidak ditemukan di server', 'warning');
+                    }
+                }
+            }
+        } finally {
+            previewBtn.disabled = false;
+            previewBtn.innerHTML = originalHtml;
         }
     });
 

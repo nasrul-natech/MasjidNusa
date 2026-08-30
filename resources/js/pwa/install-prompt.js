@@ -1,9 +1,8 @@
 /**
  * PWA Install Prompt Manager
  *
- * - Tampil setiap refresh/navigasi (kecuali sudah install atau dismiss sesi ini)
- * - Android: tombol Instal aktif setelah beforeinstallprompt siap
- * - iOS: panduan Add to Home Screen
+ * Android: popup + tombol Instal (trigger beforeinstallprompt)
+ * iOS: panduan Add to Home Screen
  */
 
 const PWA_INSTALLED_KEY = 'masjidnusa_pwa_installed';
@@ -55,49 +54,32 @@ function shouldShowPopup() {
     return sessionStorage.getItem(PWA_SESSION_KEY) !== 'true';
 }
 
-function getBaseUrl() {
-    const meta = document.querySelector('meta[name="base-url"]');
-    return meta?.content || '/';
-}
-
 async function ensureServiceWorker() {
     if (!('serviceWorker' in navigator)) return null;
 
     try {
-        const baseUrl = getBaseUrl();
-        return await navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl });
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        await navigator.serviceWorker.ready;
+        return reg;
     } catch (error) {
         console.warn('[PWA] Service worker registration failed:', error);
         return null;
     }
 }
 
-function updateInstallButton() {
+function renderInstallButton() {
     const btn = document.getElementById('pwa-install-btn');
     if (!btn || isIOS()) return;
 
-    if (deferredPrompt) {
-        btn.disabled = false;
-        btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        btn.textContent = '';
-        btn.innerHTML = `
-            <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Instal Aplikasi
-        `;
-    } else {
-        btn.disabled = true;
-        btn.classList.add('opacity-50', 'cursor-not-allowed');
-        btn.innerHTML = `
-            <svg class="w-5 h-5 mr-2 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-            Menyiapkan instalasi&hellip;
-        `;
-    }
+    btn.disabled = false;
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    btn.innerHTML = `
+        <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Instal Aplikasi
+    `;
 }
 
 function showInstallPopup() {
@@ -114,7 +96,7 @@ function showInstallPopup() {
     } else {
         iosContent.classList.add('hidden');
         androidContent.classList.remove('hidden');
-        updateInstallButton();
+        renderInstallButton();
     }
 
     popup.classList.remove('hidden');
@@ -133,28 +115,63 @@ function dismissPopup() {
     hideInstallPopup();
 }
 
+async function waitForInstallPrompt(maxMs = 3000) {
+    if (deferredPrompt) return deferredPrompt;
+
+    const step = 200;
+    const attempts = Math.ceil(maxMs / step);
+
+    for (let i = 0; i < attempts; i++) {
+        if (deferredPrompt) return deferredPrompt;
+        await new Promise((r) => setTimeout(r, step));
+    }
+
+    return deferredPrompt;
+}
+
 async function triggerNativeInstall() {
-    if (!deferredPrompt) return;
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="w-5 h-5 mr-2 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            Membuka instalasi&hellip;
+        `;
+    }
+
+    await ensureServiceWorker();
+    const prompt = await waitForInstallPrompt(4000);
+
+    if (!prompt) {
+        renderInstallButton();
+        if (typeof showToast === 'function') {
+            showToast('Instal belum tersedia. Refresh halaman lalu coba lagi.', 'warning');
+        }
+        return;
+    }
 
     try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        await prompt.prompt();
+        const { outcome } = await prompt.userChoice;
 
         if (outcome === 'accepted') {
             localStorage.setItem(PWA_INSTALLED_KEY, 'true');
+            hideInstallPopup();
         }
     } catch (error) {
         console.warn('[PWA] Install prompt failed:', error);
+        renderInstallButton();
     } finally {
         deferredPrompt = null;
-        hideInstallPopup();
     }
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    updateInstallButton();
 });
 
 window.addEventListener('appinstalled', () => {
@@ -170,18 +187,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(showInstallPopup, 1500);
     }
 
-    document.getElementById('pwa-dismiss-btn')
-        ?.addEventListener('click', dismissPopup);
-    document.getElementById('pwa-dismiss-btn-2')
-        ?.addEventListener('click', dismissPopup);
-
-    document.getElementById('pwa-install-btn')
-        ?.addEventListener('click', triggerNativeInstall);
-
-    document.getElementById('pwa-install-popup')
-        ?.addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) dismissPopup();
-        });
+    document.getElementById('pwa-dismiss-btn')?.addEventListener('click', dismissPopup);
+    document.getElementById('pwa-dismiss-btn-2')?.addEventListener('click', dismissPopup);
+    document.getElementById('pwa-install-btn')?.addEventListener('click', triggerNativeInstall);
+    document.getElementById('pwa-install-popup')?.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) dismissPopup();
+    });
 });
 
 window.masjidNusaPWA = { dismissPopup, showInstallPopup };

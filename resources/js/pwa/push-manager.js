@@ -14,9 +14,8 @@ async function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return null;
 
     try {
-        const baseUrl = getBaseUrl();
-        const swUrl = baseUrl + 'sw.js';
-        const registration = await navigator.serviceWorker.register(swUrl, { scope: baseUrl });
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        await navigator.serviceWorker.ready;
         return registration;
     } catch (error) {
         console.error('SW registration failed:', error);

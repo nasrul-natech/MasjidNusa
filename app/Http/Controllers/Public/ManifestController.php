@@ -17,12 +17,12 @@ class ManifestController extends Controller
         ];
 
         return response()->json([
-            'id'               => url('/'),
+            'id'               => '/',
             'name'             => $brand->appName(),
             'short_name'       => $brand->appName(),
             'description'      => $brand->tagline(),
-            'start_url'        => url('/'),
-            'scope'            => url('/'),
+            'start_url'        => '/',
+            'scope'            => '/',
             'display'          => 'standalone',
             'orientation'      => 'portrait',
             'background_color' => '#ffffff',
