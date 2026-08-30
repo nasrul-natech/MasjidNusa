@@ -30,10 +30,9 @@
             @if($donation->latestTransaction?->proof)
             <div class="shrink-0">
                 <p class="text-xs text-gray-500 mb-1">Bukti Transfer</p>
-                @php $proofPath = $donation->latestTransaction->proof->image ?? null; @endphp
-                @if($proofPath)
-                <a href="{{ asset('storage/' . $proofPath) }}" target="_blank" class="block">
-                    <img src="{{ asset('storage/' . $proofPath) }}" class="h-28 w-28 object-cover rounded-xl hover:opacity-80 transition-opacity border border-gray-200">
+                @if($donation->latestTransaction->proof->image_url)
+                <a href="{{ $donation->latestTransaction->proof->image_url }}" target="_blank" class="block">
+                    <img src="{{ $donation->latestTransaction->proof->image_url }}" class="h-28 w-28 object-cover rounded-xl hover:opacity-80 transition-opacity border border-gray-200">
                 </a>
                 @else
                 <div class="h-28 w-28 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">

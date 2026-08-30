@@ -43,7 +43,7 @@ echo "==> Migrate..."
 "$PHP_BIN" artisan migrate --force
 
 echo "==> Storage link..."
-"$PHP_BIN" artisan storage:link --force 2>/dev/null || true
+"$PHP_BIN" artisan storage:link --force || "$PHP_BIN" artisan storage:link
 
 if command -v npm >/dev/null 2>&1 && [ -f package.json ]; then
   echo "==> Build assets..."

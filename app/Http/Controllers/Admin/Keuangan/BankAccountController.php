@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Keuangan;
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class BankAccountController extends Controller
 {
@@ -52,7 +53,16 @@ class BankAccountController extends Controller
             'account_number' => ['required', 'string'],
             'is_active' => ['boolean'],
             'sort_order' => ['integer'],
+            'bank_logo' => ['nullable', 'image', 'max:1024'],
         ]);
+
+        if ($request->hasFile('bank_logo')) {
+            if ($bankAccount->bank_logo) {
+                Storage::disk('public')->delete($bankAccount->bank_logo);
+            }
+            $data['bank_logo'] = $request->file('bank_logo')->store('bank-logos', 'public');
+        }
+
         $bankAccount->update($data);
         return redirect()->route('admin.keuangan.bank-accounts.index')->with('success', 'Rekening diperbarui.');
     }

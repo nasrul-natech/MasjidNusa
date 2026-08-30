@@ -25,8 +25,8 @@ class PaymentProof extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    public function getImageUrlAttribute(): string
+    public function getImageUrlAttribute(): ?string
     {
-        return asset('storage/' . $this->image);
+        return storage_url($this->image);
     }
 }

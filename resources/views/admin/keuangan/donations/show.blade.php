@@ -73,9 +73,13 @@
                 @if($transaction->proof)
                 <div class="mt-3 p-3 bg-gray-50 rounded-lg">
                     <p class="text-xs text-gray-500 mb-2">Bukti Pembayaran</p>
-                    <a href="{{ asset('storage/' . $transaction->proof->file_path) }}" target="_blank">
-                        <img src="{{ asset('storage/' . $transaction->proof->file_path) }}" class="h-32 object-cover rounded-lg hover:opacity-80 transition-opacity">
+                    @if($transaction->proof->image_url)
+                    <a href="{{ $transaction->proof->image_url }}" target="_blank">
+                        <img src="{{ $transaction->proof->image_url }}" class="h-32 object-cover rounded-lg hover:opacity-80 transition-opacity">
                     </a>
+                    @else
+                    <p class="text-xs text-gray-400">Bukti pembayaran tidak tersedia</p>
+                    @endif
                     @if(!$transaction->proof->verified_at)
                     <div class="flex gap-2 mt-3">
                         <form action="{{ route('admin.keuangan.verify-payment.approve', $donation->id) }}" method="POST">

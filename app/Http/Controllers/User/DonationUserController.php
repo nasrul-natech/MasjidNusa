@@ -11,6 +11,7 @@ use App\Models\PaymentTransaction;
 use App\Services\DuitkuService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class DonationUserController extends Controller
@@ -157,6 +158,10 @@ class DonationUserController extends Controller
         // Ensure the donation belongs to the user
         if ($transaction->donation->user_id !== auth()->id()) {
             abort(403);
+        }
+
+        if ($transaction->proof?->image) {
+            Storage::disk('public')->delete($transaction->proof->image);
         }
 
         $path = $request->file('proof')->store('payment-proofs', 'public');
