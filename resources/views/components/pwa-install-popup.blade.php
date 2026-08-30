@@ -14,11 +14,12 @@
 
         {{-- App icon + info --}}
         <div class="flex items-center gap-4 mb-5">
-            <img src="{{ asset('images/icons/icon-192.png') }}" alt="MasjidNusa"
-                 class="w-16 h-16 rounded-2xl shadow-md flex-shrink-0">
+            <img src="{{ $brand->logoIconUrl() }}" alt="{{ $brand->appName() }}"
+                 class="w-16 h-16 rounded-2xl shadow-md flex-shrink-0 object-cover"
+                 onerror="this.src='{{ asset('images/logo-masjidnusa-icon.png') }}'">
             <div>
-                <h3 class="font-bold text-gray-900 text-lg leading-tight">MasjidNusa</h3>
-                <p class="text-sm text-gray-500">Menghubungkan Masjid, Umat & Kebaikan</p>
+                <h3 class="font-bold text-gray-900 text-lg leading-tight">{{ $brand->appName() }}</h3>
+                <p class="text-sm text-gray-500">{{ $brand->tagline() }}</p>
                 <div class="flex gap-0.5 mt-1">
                     @for($i = 0; $i < 5; $i++)
                         <svg class="w-3.5 h-3.5 text-amber-400 fill-current" viewBox="0 0 20 20">
@@ -35,7 +36,7 @@
 
         {{-- ── ANDROID: tombol install langsung ── --}}
         <div id="pwa-android-content">
-            <button id="pwa-install-btn"
+            <button id="pwa-install-btn" type="button"
                     class="btn-primary w-full mb-3 py-3 flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -43,6 +44,10 @@
                 </svg>
                 Instal Aplikasi
             </button>
+            <div id="pwa-android-fallback" class="hidden bg-gray-50 border border-gray-100 rounded-xl p-4 mb-3">
+                <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Instal via browser:</p>
+                <p class="text-sm text-gray-600">Tap menu <strong>⋮</strong> di kanan atas → pilih <strong>"Install app"</strong> atau <strong>"Add to Home screen"</strong>.</p>
+            </div>
         </div>
 
         {{-- ── iOS: panduan Add to Home Screen (satu-satunya cara di Safari iOS) ── --}}
@@ -75,8 +80,7 @@
             </div>
         </div>
 
-        <button id="pwa-dismiss-btn-2"
-                onclick="window.bkdiPWA?.dismissPopup()"
+        <button id="pwa-dismiss-btn-2" type="button"
                 class="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors">
             Nanti saja
         </button>
