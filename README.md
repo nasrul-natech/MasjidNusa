@@ -513,11 +513,24 @@ Tambahkan di **hPanel → Advanced → Cron Jobs**:
 
 | Item | Keterangan |
 |------|------------|
+| **PHP Web vs CLI** | hPanel set PHP 8.4 untuk **web**, tapi SSH default bisa masih 8.2. Cek: `php -v`. Pakai `php84` atau script deploy otomatis |
 | `public_html` | Harus symlink ke `app/public`, bukan copy manual |
 | `storage:link` | Buat `public/storage` → `storage/app/public` (upload user) |
 | `.env` | Hanya di server, jangan di-commit |
 | `APP_DEBUG` | Wajib `false` di production |
 | Database | Buat di hPanel, isi `DB_*` di `.env` |
+
+**Jika `php -v` masih 8.2 di SSH**, jalankan manual dengan PHP 8.4:
+
+```bash
+php84 -v
+cd ~/domains/masjid.nusasuite.id/app
+php84 $(which composer) install --no-dev --optimize-autoloader
+php84 artisan config:clear
+php84 artisan key:generate --force
+php84 artisan migrate --force
+php84 artisan config:cache
+```
 
 ---
 

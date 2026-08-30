@@ -6,6 +6,10 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=hostinger-php.sh
+source "$SCRIPT_DIR/hostinger-php.sh"
+
 DOMAIN_DIR="${DOMAIN_DIR:-$HOME/domains/masjid.nusasuite.id}"
 APP_DIR="$DOMAIN_DIR/app"
 REPO="${REPO:-git@github.com:nasrul-natech/MasjidNusa.git}"
@@ -54,17 +58,17 @@ ls -la public_html
 echo "==> [4/8] Composer install..."
 cd "$APP_DIR"
 if ! command -v composer >/dev/null 2>&1; then
-  echo "    composer tidak ditemukan — coba: php ~/composer.phar install"
-  php ~/composer.phar install --no-dev --optimize-autoloader --no-interaction
+  echo "    composer tidak ditemukan — coba: $PHP_BIN ~/composer.phar install"
+  "$PHP_BIN" ~/composer.phar install --no-dev --optimize-autoloader --no-interaction
 else
-  composer install --no-dev --optimize-autoloader --no-interaction
+  "$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction
 fi
 
 # ── 5. Environment ────────────────────────────────────────────
 echo "==> [5/8] Environment (.env)..."
 if [ ! -f .env ]; then
   cp .env.example .env
-  php artisan key:generate --force
+  "$PHP_BIN" artisan key:generate --force
   echo ""
   echo "    ⚠️  Edit .env sekarang sebelum lanjut:"
   echo "       nano $APP_DIR/.env"
@@ -80,7 +84,7 @@ fi
 
 # ── 6. Storage symlink ────────────────────────────────────────
 echo "==> [6/8] Storage symlink (public/storage → storage/app/public)..."
-php artisan storage:link --force 2>/dev/null || php artisan storage:link
+"$PHP_BIN" artisan storage:link --force 2>/dev/null || "$PHP_BIN" artisan storage:link
 
 # ── 7. Permission ─────────────────────────────────────────────
 echo "==> [7/8] Set permission storage & cache..."
@@ -97,10 +101,11 @@ fi
 
 # ── Migrate & cache ───────────────────────────────────────────
 echo "==> Migrate & optimize..."
-php artisan migrate --force
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+"$PHP_BIN" artisan config:clear
+"$PHP_BIN" artisan migrate --force
+"$PHP_BIN" artisan config:cache
+"$PHP_BIN" artisan route:cache
+"$PHP_BIN" artisan view:cache
 
 echo ""
 echo "✅ Setup selesai!"
@@ -110,5 +115,5 @@ echo "  $DOMAIN_DIR/app/          ← Laravel (di luar web root)"
 echo "  $DOMAIN_DIR/public_html   → app/public (web root Hostinger)"
 echo ""
 echo "Cron (hPanel → Advanced → Cron Jobs):"
-echo "  * * * * * cd $APP_DIR && php artisan schedule:run >> /dev/null 2>&1"
+echo "  * * * * * cd $APP_DIR && $PHP_BIN artisan schedule:run >> /dev/null 2>&1"
 echo ""

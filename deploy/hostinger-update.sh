@@ -5,6 +5,10 @@
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=hostinger-php.sh
+source "$SCRIPT_DIR/hostinger-php.sh"
+
 DOMAIN_DIR="${DOMAIN_DIR:-$HOME/domains/masjid.nusasuite.id}"
 APP_DIR="$DOMAIN_DIR/app"
 BRANCH="${BRANCH:-main}"
@@ -27,13 +31,13 @@ git checkout "$BRANCH"
 git pull origin "$BRANCH"
 
 echo "==> Composer..."
-composer install --no-dev --optimize-autoloader --no-interaction
+"$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction
 
 echo "==> Migrate..."
-php artisan migrate --force
+"$PHP_BIN" artisan migrate --force
 
 echo "==> Storage link..."
-php artisan storage:link --force 2>/dev/null || true
+"$PHP_BIN" artisan storage:link --force 2>/dev/null || true
 
 if command -v npm >/dev/null 2>&1 && [ -f package.json ]; then
   echo "==> Build assets..."
@@ -42,11 +46,12 @@ if command -v npm >/dev/null 2>&1 && [ -f package.json ]; then
 fi
 
 echo "==> Cache..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+"$PHP_BIN" artisan config:clear
+"$PHP_BIN" artisan config:cache
+"$PHP_BIN" artisan route:cache
+"$PHP_BIN" artisan view:cache
 
 echo "==> Maintenance off..."
-php artisan up 2>/dev/null || true
+"$PHP_BIN" artisan up 2>/dev/null || true
 
 echo "✅ Update selesai — https://masjid.nusasuite.id"
