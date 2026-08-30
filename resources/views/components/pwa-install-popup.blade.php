@@ -34,7 +34,7 @@
             Instal aplikasi untuk akses cepat, notifikasi kegiatan masjid, dan pengalaman lebih nyaman di HP Anda.
         </p>
 
-        {{-- ── ANDROID: tombol install langsung ── --}}
+        {{-- ── ANDROID: tombol install native (beforeinstallprompt) ── --}}
         <div id="pwa-android-content">
             <button id="pwa-install-btn" type="button"
                     class="btn-primary w-full mb-3 py-3 flex items-center justify-center">
@@ -44,10 +44,6 @@
                 </svg>
                 Instal Aplikasi
             </button>
-            <div id="pwa-android-fallback" class="hidden bg-gray-50 border border-gray-100 rounded-xl p-4 mb-3">
-                <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Instal via browser:</p>
-                <p class="text-sm text-gray-600">Tap menu <strong>⋮</strong> di kanan atas → pilih <strong>"Install app"</strong> atau <strong>"Add to Home screen"</strong>.</p>
-            </div>
         </div>
 
         {{-- ── iOS: panduan Add to Home Screen (satu-satunya cara di Safari iOS) ── --}}
