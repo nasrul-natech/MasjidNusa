@@ -3,7 +3,7 @@
  * Handles caching, push notifications, and offline support
  */
 
-const CACHE_VERSION = 'masjidnusa-v1';
+const CACHE_VERSION = 'masjidnusa-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 

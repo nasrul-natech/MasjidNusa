@@ -23,6 +23,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
+    <script>
+    (function () {
+        window.__pwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            window.__pwaPrompt = e;
+        });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+        }
+    })();
+    </script>
 
     {{-- Base URL for JS --}}
     <meta name="base-url" content="{{ rtrim(config('app.url'), '/') }}/">

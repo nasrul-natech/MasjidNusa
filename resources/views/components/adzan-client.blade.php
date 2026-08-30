@@ -16,7 +16,7 @@
 
 <script>
 window.AdzanClient = (function () {
-    const AUDIO_BASE = @json(asset('audio')) + '/';
+    const AUDIO_BASE = '/audio/';
     const STORAGE_KEY = 'adzan_settings';
     const SCHEDULE_URL = @json(route('adzan.schedule.json'));
     const IS_LOGGED_IN = @json(auth()->check());
@@ -33,24 +33,21 @@ window.AdzanClient = (function () {
     let currentSchedule = null;
     let audioUnlocked = false;
 
-    async function unlockAudio() {
-        if (audioUnlocked) return true;
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-            audioUnlocked = true;
-            return true;
-        } catch {
-            return false;
+    function getAudioContext() {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return null;
+        if (!audioCtx || audioCtx.state === 'closed') {
+            audioCtx = new Ctx();
         }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        audioUnlocked = true;
+        return audioCtx;
     }
 
     function setupAudioUnlock() {
-        const handler = () => { unlockAudio(); };
+        const handler = () => { getAudioContext(); };
         ['click', 'touchstart', 'keydown'].forEach((ev) => {
             document.addEventListener(ev, handler, { once: true, passive: true });
         });
@@ -77,27 +74,22 @@ window.AdzanClient = (function () {
         };
     }
 
-    async function playSimpleTone(volume) {
+    function playSimpleTone(volume) {
         try {
-            await unlockAudio();
-            if (!audioCtx || audioCtx.state === 'closed') {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
+            const ctx = getAudioContext();
+            if (!ctx) return;
 
-            const gain = audioCtx.createGain();
+            const gain = ctx.createGain();
             gain.gain.value = (volume || 80) / 100;
-            gain.connect(audioCtx.destination);
+            gain.connect(ctx.destination);
 
             const melody = [
                 [523.25, 0.5], [587.33, 0.3], [659.25, 0.5], [698.46, 0.3],
                 [783.99, 0.8], [659.25, 0.5], [523.25, 0.8],
             ];
-            let time = audioCtx.currentTime + 0.1;
+            let time = ctx.currentTime + 0.05;
             melody.forEach(([freq, dur]) => {
-                const osc = audioCtx.createOscillator();
+                const osc = ctx.createOscillator();
                 osc.type = 'sine';
                 osc.frequency.value = freq;
                 osc.connect(gain);
@@ -105,33 +97,27 @@ window.AdzanClient = (function () {
                 osc.stop(time + dur * 0.85);
                 time += dur;
             });
-
-            const totalDur = melody.reduce((sum, [, d]) => sum + d, 0);
-            setTimeout(() => {
-                if (audioCtx && audioCtx.state !== 'closed') {
-                    audioCtx.close();
-                }
-                audioCtx = null;
-            }, (totalDur + 1) * 1000);
         } catch (e) {
             console.warn('[Adzan] Simple tone failed:', e);
         }
     }
 
-    async function playAdzanAudio(type, volume) {
+    function playAdzanAudio(type, volume) {
         const url = AUDIO_BASE + 'adzan-' + type + '.mp3';
-        try {
-            await unlockAudio();
-            if (audioElement) {
-                audioElement.pause();
-            }
-            audioElement = new Audio(url);
-            audioElement.volume = (volume || 80) / 100;
-            audioElement.preload = 'auto';
-            await audioElement.play();
-        } catch (err) {
-            console.warn('[Adzan] MP3 failed:', url, err);
-            await playSimpleTone(volume);
+        getAudioContext();
+        if (audioElement) {
+            audioElement.pause();
+            audioElement = null;
+        }
+        audioElement = new Audio(url);
+        audioElement.volume = (volume || 80) / 100;
+        audioElement.preload = 'auto';
+        const playPromise = audioElement.play();
+        if (playPromise && playPromise.catch) {
+            playPromise.catch((err) => {
+                console.warn('[Adzan] MP3 failed:', url, err);
+                playSimpleTone(volume);
+            });
         }
     }
 
@@ -171,7 +157,7 @@ window.AdzanClient = (function () {
         if (audioCtx) { audioCtx.close(); audioCtx = null; }
     }
 
-    async function triggerAdzan(prayerKey, time, isReminder) {
+    function triggerAdzan(prayerKey, time, isReminder) {
         const s = settings || getSettings() || defaultSettings();
 
         showBanner(prayerKey, time, isReminder);
@@ -180,12 +166,12 @@ window.AdzanClient = (function () {
 
         if (!isReminder) {
             if (s.sound_type === 'simple') {
-                await playSimpleTone(s.volume);
+                playSimpleTone(s.volume);
             } else {
-                await playAdzanAudio(s.sound_type, s.volume);
+                playAdzanAudio(s.sound_type, s.volume);
             }
         } else {
-            await playSimpleTone(Math.min(s.volume, 60));
+            playSimpleTone(Math.min(s.volume, 60));
         }
     }
 
@@ -289,23 +275,21 @@ window.AdzanClient = (function () {
         init,
         reload: fetchAndSchedule,
         triggerAdzan,
-        previewSound: async function (type, volume) {
-            await unlockAudio();
+        previewSound: function (type, volume) {
             showBanner('subuh', '--:--', false);
             if (type === 'simple') {
-                await playSimpleTone(volume ?? 80);
+                playSimpleTone(volume ?? 80);
             } else {
-                await playAdzanAudio(type, volume ?? 80);
+                playAdzanAudio(type, volume ?? 80);
             }
         },
-        testSound: async function () {
+        testSound: function () {
             const s = settings || getSettings() || defaultSettings();
-            await unlockAudio();
             showBanner('subuh', '--:--', false);
             if (s.sound_type === 'simple') {
-                await playSimpleTone(s.volume);
+                playSimpleTone(s.volume);
             } else {
-                await playAdzanAudio(s.sound_type, s.volume);
+                playAdzanAudio(s.sound_type, s.volume);
             }
         },
         stopAudio,

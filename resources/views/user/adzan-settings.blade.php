@@ -581,56 +581,66 @@
     // Update info sholat berikutnya tiap menit
     setInterval(() => updateNextPrayerInfo(), 60000);
 
-    const previewBtn = document.getElementById('preview-sound');
-    let previewAudio = null;
-
-    function getSelectedSoundType() {
-        return document.querySelector('input[name="sound_type"]:checked')?.value || 'simple';
-    }
-
-    previewBtn?.addEventListener('click', async () => {
-        const type = getSelectedSoundType();
-        const volume = parseInt(slider?.value || 80, 10);
-
-        previewBtn.disabled = true;
-        const originalHtml = previewBtn.innerHTML;
-        previewBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg> Memutar…';
-
-        try {
-            if (previewAudio) {
-                previewAudio.pause();
-                previewAudio = null;
-            }
-
-            if (window.AdzanClient?.previewSound) {
-                await AdzanClient.previewSound(type, volume);
-            } else {
-                throw new Error('AdzanClient belum siap');
-            }
-        } catch (err) {
-            console.error('[Adzan Preview]', err);
-            const src = @json(asset('audio')) + '/adzan-' + type + '.mp3';
-            if (type === 'simple') {
-                if (typeof showToast === 'function') showToast('Gagal memutar suara. Muat ulang halaman.', 'warning');
-            } else {
-                previewAudio = new Audio(src);
-                previewAudio.volume = volume / 100;
-                try {
-                    await previewAudio.play();
-                    setTimeout(() => { previewAudio?.pause(); previewAudio = null; }, 10000);
-                } catch {
-                    if (typeof showToast === 'function') {
-                        showToast('Audio adzan-' + type + '.mp3 tidak ditemukan di server', 'warning');
-                    }
-                }
-            }
-        } finally {
-            previewBtn.disabled = false;
-            previewBtn.innerHTML = originalHtml;
-        }
-    });
-
     updateNextPrayerInfo();
+})();
+</script>
+<script>
+(function () {
+    const previewBtn = document.getElementById('preview-sound');
+    const slider = document.getElementById('volume-slider');
+    if (!previewBtn) return;
+
+    let previewAudio = null;
+    let previewCtx = null;
+
+    previewBtn.addEventListener('click', function () {
+        const type = document.querySelector('input[name="sound_type"]:checked')?.value || 'simple';
+        const volume = parseInt(slider?.value || '80', 10);
+
+        if (window.AdzanClient?.previewSound) {
+            AdzanClient.previewSound(type, volume);
+            return;
+        }
+
+        if (previewAudio) {
+            previewAudio.pause();
+            previewAudio = null;
+        }
+
+        if (type === 'simple') {
+            try {
+                if (previewCtx && previewCtx.state !== 'closed') previewCtx.close();
+                previewCtx = new (window.AudioContext || window.webkitAudioContext)();
+                previewCtx.resume();
+                const gain = previewCtx.createGain();
+                gain.gain.value = volume / 100;
+                gain.connect(previewCtx.destination);
+                const notes = [523.25, 659.25, 783.99, 659.25, 523.25];
+                let time = previewCtx.currentTime;
+                notes.forEach((freq) => {
+                    const osc = previewCtx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    osc.connect(gain);
+                    osc.start(time);
+                    osc.stop(time + 0.32);
+                    time += 0.4;
+                });
+            } catch (e) {
+                console.warn('[Adzan Preview] tone failed', e);
+            }
+            return;
+        }
+
+        previewAudio = new Audio('/audio/adzan-' + type + '.mp3');
+        previewAudio.volume = volume / 100;
+        previewAudio.play().catch((err) => {
+            console.warn('[Adzan Preview] mp3 failed', err);
+            if (typeof showToast === 'function') {
+                showToast('Gagal memutar audio. Cek file /audio/adzan-' + type + '.mp3', 'warning');
+            }
+        });
+    });
 })();
 </script>
 @endpush
