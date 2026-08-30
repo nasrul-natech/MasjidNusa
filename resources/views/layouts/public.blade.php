@@ -18,23 +18,21 @@
         :description="trim($__env->yieldContent('meta_description')) ?: null"
     />
 
+    {{-- Capture install eligibility before deferred Vite modules execute. --}}
+    <script>
+    window.__pwaPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.__pwaPrompt = event;
+        window.dispatchEvent(new Event('pwa-install-ready'));
+    });
+    </script>
+
     {{-- PWA --}}
     <link rel="manifest" href="{{ route('manifest') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
-    <script>
-    (function () {
-        window.__pwaPrompt = null;
-        window.addEventListener('beforeinstallprompt', function (e) {
-            e.preventDefault();
-            window.__pwaPrompt = e;
-        });
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
-        }
-    })();
-    </script>
 
     {{-- Base URL for JS --}}
     <meta name="base-url" content="{{ rtrim(config('app.url'), '/') }}/">

@@ -76,7 +76,7 @@ Route::get('/info-masjid/sejarah', [MosqueInfoController::class, 'history'])->na
 Route::get('/info-masjid/kepengurusan', [MosqueInfoController::class, 'management'])->name('info-masjid.management');
 Route::get('/info-masjid/organisasi', [MosqueInfoController::class, 'organization'])->name('info-masjid.organization');
 Route::get('/info-sistem', [InfoSistemController::class, 'index'])->name('info-sistem');
-Route::get('/manifest.json', ManifestController::class)->name('manifest');
+Route::get('/manifest.webmanifest', ManifestController::class)->name('manifest');
 // ===== AL-QURAN =====
 Route::prefix('quran')->name('quran.')->group(function () {
     Route::get('/', [QuranController::class, 'index'])->name('index');

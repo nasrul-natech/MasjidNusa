@@ -75,6 +75,11 @@ function showInstallPopup() {
     popup.classList.add('flex');
 }
 
+function showAndroidInstallPopup() {
+    if (isIOS() || !window.__pwaPrompt || !shouldShowPopup()) return;
+    showInstallPopup();
+}
+
 function hideInstallPopup() {
     const popup = document.getElementById('pwa-install-popup');
     if (!popup) return;
@@ -89,9 +94,7 @@ function dismissPopup() {
 
 function triggerNativeInstall() {
     const promptEvent = window.__pwaPrompt;
-    if (!promptEvent) {
-        return;
-    }
+    if (!promptEvent) return;
 
     promptEvent.prompt();
     promptEvent.userChoice.then(({ outcome }) => {
@@ -112,8 +115,10 @@ window.addEventListener('appinstalled', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (shouldShowPopup()) {
+    if (isIOS() && shouldShowPopup()) {
         setTimeout(showInstallPopup, 800);
+    } else {
+        showAndroidInstallPopup();
     }
 
     document.getElementById('pwa-dismiss-btn')?.addEventListener('click', dismissPopup);
@@ -123,5 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === e.currentTarget) dismissPopup();
     });
 });
+
+window.addEventListener('pwa-install-ready', showAndroidInstallPopup);
 
 window.masjidNusaPWA = { dismissPopup, showInstallPopup };

@@ -56,6 +56,9 @@ class ManifestController extends Controller
                 ],
             ],
             'prefer_related_applications' => false,
-        ])->header('Content-Type', 'application/manifest+json');
+        ])->withHeaders([
+            'Content-Type'  => 'application/manifest+json',
+            'Cache-Control' => 'no-cache, must-revalidate',
+        ]);
     }
 }
