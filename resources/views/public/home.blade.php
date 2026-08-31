@@ -188,11 +188,13 @@ function heroSlider(total, mode) {
 @php
     $hasMobileBanner = $mobileBanners->count() > 0;
     $hasDesktopBanner = $desktopBanners->count() > 0;
+    $showFallbackHero = $desktopBanners->isEmpty() && $mobileBanners->isEmpty();
+    $hasMobileHero = $hasMobileBanner || $showFallbackHero;
 @endphp
 
-<div class="relative z-10 {{ $hasMobileBanner ? '-mt-3 rounded-t-[12px] overflow-hidden' : '' }} md:bg-transparent md:mt-0 md:rounded-none md:overflow-visible">
+<div class="relative z-10 {{ $hasMobileHero ? '-mt-3 rounded-t-[12px] overflow-hidden' : '' }} md:bg-transparent md:mt-0 md:rounded-none md:overflow-visible">
     <div class="max-w-7xl mx-auto px-4 lg:px-6 {{ $hasDesktopBanner ? 'md:mt-4 lg:mt-5' : 'md:pt-4' }}">
-        <div class="bg-emerald-700 text-white py-4 px-4 {{ $hasMobileBanner ? 'rounded-t-[12px]' : '' }} md:rounded-2xl md:shadow-xl md:px-6 md:py-5 lg:px-8 lg:py-6">
+        <div class="bg-emerald-700 text-white py-4 px-4 {{ $hasMobileHero ? 'rounded-t-[12px]' : '' }} md:rounded-2xl md:shadow-xl md:px-6 md:py-5 lg:px-8 lg:py-6">
             {{-- Header row --}}
             <div class="flex items-start justify-between mb-3 lg:mb-4">
                 <div>
