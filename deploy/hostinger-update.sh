@@ -49,6 +49,26 @@ if command -v npm >/dev/null 2>&1 && [ -f package.json ]; then
   echo "==> Build assets..."
   npm ci --omit=dev 2>/dev/null || npm install --omit=dev
   npm run build
+else
+  echo "==> Build assets (npm tidak tersedia — pastikan public/build sudah di-upload dari lokal)"
+fi
+
+# Verifikasi CSS/JS dari manifest ada di disk (cegah halaman tanpa Tailwind)
+if [ -f public/build/manifest.json ]; then
+  missing=0
+  while IFS= read -r asset; do
+    if [ -n "$asset" ] && [ ! -f "public/build/$asset" ]; then
+      echo "    ⚠️  Asset hilang: public/build/$asset"
+      missing=1
+    fi
+  done < <(grep -o '"file": "assets/[^"]*"' public/build/manifest.json | sed 's/"file": "//;s/"//')
+  if [ "$missing" -eq 1 ]; then
+    echo ""
+    echo "    ERROR: File CSS/JS build tidak lengkap."
+    echo "    Dari komputer lokal jalankan: npm run build && bash deploy/sync-assets.sh"
+    echo "    Atau commit + pull file CSS yang ada di manifest.json."
+    exit 1
+  fi
 fi
 
 echo "==> Cache..."
