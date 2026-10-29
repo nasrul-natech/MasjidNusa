@@ -38,30 +38,45 @@ class DuitkuWebhookController extends Controller
             return response('Not found', 404);
         }
 
-        if ($resultCode === '00') {
-            $settled = $donation->settle(Donation::STATUS_PAID, function (Donation $locked) use ($data) {
-                $transaction = $locked->latestTransaction()->first();
-                if (!$transaction) {
-                    return;
-                }
+        $transaction = $this->duitkuService->matchingTransaction($donation, $data);
+        if (!$transaction) {
+            Log::warning('Duitku: Callback tidak cocok dengan transaksi lokal', [
+                'order' => $merchantOrderId,
+            ]);
 
-                $transaction->update([
-                    'status' => 'paid',
-                    'gateway_response' => array_merge($transaction->gateway_response ?? [], $data),
-                    'paid_at' => now(),
-                ]);
-            });
+            return response('Unmatched callback', 400);
+        }
+
+        if ($donation->isSettled()) {
+            return response('OK', 200);
+        }
+
+        if ($resultCode === '00') {
+            $settled = $donation->settle(
+                Donation::STATUS_PAID,
+                [Donation::STATUS_PENDING, Donation::STATUS_WAITING_VERIFICATION],
+                function (Donation $locked) use ($data, $transaction) {
+                    $lockedTransaction = PaymentTransaction::query()->whereKey($transaction->id)->lockForUpdate()->first();
+                    $lockedTransaction?->update([
+                        'status' => 'paid',
+                        'gateway_response' => array_merge($lockedTransaction->gateway_response ?? [], $data),
+                        'paid_at' => now(),
+                    ]);
+                }
+            );
 
             if ($settled) {
                 $this->notificationService->sendPaymentSuccess($donation->fresh());
             }
         } else {
-            $donation->closeIfOpen(Donation::STATUS_FAILED, function (Donation $locked) use ($data) {
-                $transaction = $locked->latestTransaction()->first();
-                if ($transaction) {
-                    $transaction->update(['status' => 'failed', 'gateway_response' => $data]);
+            $donation->closeIfOpen(
+                Donation::STATUS_FAILED,
+                [Donation::STATUS_PENDING, Donation::STATUS_WAITING_VERIFICATION],
+                function (Donation $locked) use ($data, $transaction) {
+                    $lockedTransaction = PaymentTransaction::query()->whereKey($transaction->id)->lockForUpdate()->first();
+                    $lockedTransaction?->update(['status' => 'failed', 'gateway_response' => $data]);
                 }
-            });
+            );
         }
 
         return response('OK', 200);

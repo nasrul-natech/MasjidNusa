@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'module' => EnsureModuleActive::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'two-factor' => \App\Http\Middleware\EnsureTwoFactorVerified::class,
+            'pending-two-factor' => \App\Http\Middleware\EnsurePendingTwoFactor::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -28,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\EnsureUserIsActive::class,
+            \App\Http\Middleware\ExtendRememberedSession::class,
+            \App\Http\Middleware\PreventAuthenticatedPageCache::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

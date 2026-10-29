@@ -56,6 +56,10 @@ class ActivityAdminController extends Controller
         $data['slug'] = Str::slug($data['title']) . '-' . time();
         $data['created_by'] = auth()->id();
 
+        if ($data['status'] === 'publish' && !auth()->user()->can('publish_content')) {
+            return back()->with('error', 'Anda tidak memiliki izin menerbitkan konten.')->withInput();
+        }
+
         if ($request->hasFile('banner')) {
             $data['banner'] = $request->file('banner')->store('activities', 'public');
         }
@@ -93,6 +97,10 @@ class ActivityAdminController extends Controller
         ]);
 
         $wasPublished = $activity->status !== 'publish';
+        if ($data['status'] === 'publish' && $wasPublished && !auth()->user()->can('publish_content')) {
+            return back()->with('error', 'Anda tidak memiliki izin menerbitkan konten.')->withInput();
+        }
+
         if ($request->hasFile('banner')) {
             $data['banner'] = $request->file('banner')->store('activities', 'public');
         }
@@ -114,6 +122,10 @@ class ActivityAdminController extends Controller
 
     public function publish(int $id)
     {
+        if (!auth()->user()->can('publish_content')) {
+            return back()->with('error', 'Anda tidak memiliki izin menerbitkan konten.');
+        }
+
         $activity = Activity::findOrFail($id);
         $activity->update(['status' => 'publish']);
         $this->notifyNewActivity($activity);

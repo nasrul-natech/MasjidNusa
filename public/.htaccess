@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # Bukti transfer tidak boleh diunduh langsung dari disk publik.
+    RewriteRule ^storage/payment-proofs(/|$) - [F,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

@@ -10,6 +10,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 class PasswordResetController extends Controller
@@ -23,9 +24,13 @@ class PasswordResetController extends Controller
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        $user = User::where('email', $request->email)->first();
+        $emailKey = 'password-reset:' . strtolower($request->email);
+        $user = RateLimiter::tooManyAttempts($emailKey, 3)
+            ? null
+            : User::where('email', $request->email)->first();
 
         if ($user) {
+            RateLimiter::hit($emailKey, 15 * 60);
             // Generate token via Laravel's Password broker (stored in password_reset_tokens table)
             $token = Password::broker()->createToken($user);
 
@@ -71,6 +76,8 @@ class PasswordResetController extends Controller
                     'password'       => Hash::make($password),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                $user->revokeAccess();
 
                 event(new PasswordReset($user));
                 AuditLog::record('user.password_reset', $user);

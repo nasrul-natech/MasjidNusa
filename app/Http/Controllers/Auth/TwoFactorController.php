@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\TwoFactorService;
+use App\Support\RememberLogin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -19,8 +20,13 @@ class TwoFactorController extends Controller
 
     public function showChallenge(Request $request)
     {
-        if (!$request->session()->has('login.id')) {
+        $user = $this->resolvePendingUser($request);
+        if (!$user) {
             return redirect()->route('login');
+        }
+
+        if (!$user->hasTwoFactorEnabled()) {
+            return redirect()->route('two-factor.setup');
         }
 
         return view('auth.two-factor-challenge', [
@@ -34,19 +40,17 @@ class TwoFactorController extends Controller
             'code' => ['required', 'string'],
         ]);
 
-        $userId = $request->session()->get('login.id');
-        if (!$userId) {
+        $user = $this->resolvePendingUser($request);
+        if (!$user) {
             return redirect()->route('login');
         }
 
-        $throttleKey = 'two-factor:' . $userId;
+        $throttleKey = 'two-factor:' . $user->id;
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             throw ValidationException::withMessages([
                 'code' => 'Terlalu banyak percobaan. Coba lagi dalam ' . RateLimiter::availableIn($throttleKey) . ' detik.',
             ]);
         }
-
-        $user = User::findOrFail($userId);
         $code = str_replace([' ', '-'], '', $request->input('code'));
 
         $valid = strlen($code) === 6
@@ -127,11 +131,16 @@ class TwoFactorController extends Controller
     {
         $userId = $request->session()->get('login.id');
 
-        if (!$userId) {
-            return null;
+        if ($userId) {
+            return User::find($userId);
         }
 
-        return User::find($userId);
+        $user = $request->user();
+        if ($user && $user->requiresTwoFactor() && !$request->session()->get('two_factor_verified')) {
+            return $user;
+        }
+
+        return null;
     }
 
     protected function completeLogin(Request $request, User $user)
@@ -142,19 +151,26 @@ class TwoFactorController extends Controller
             return redirect()->route('login')->with('error', 'Akun Anda tidak aktif. Hubungi administrator.');
         }
 
-        $remember = $request->session()->get('login.remember', false);
+        $remember = (bool) $request->session()->get('login.remember', false)
+            || $request->session()->has('remember_until');
         $redirect = $this->safeInternalPath($request->session()->get('login.redirect', '/'));
 
+        RememberLogin::start($remember);
         Auth::login($user, $remember);
         $request->session()->regenerate();
         $request->session()->put('two_factor_verified', true);
+        RememberLogin::persist($request, $remember);
+        if (!$remember) {
+            RememberLogin::forget();
+        }
+
+        if ($user->requiresTwoFactor()) {
+            $user->forceFill([
+                'two_factor_remembered_at' => $remember ? now() : null,
+            ])->save();
+        }
 
         $request->session()->forget(['login.id', 'login.remember', 'login.redirect']);
-
-        if ($remember) {
-            config(['session.lifetime' => 30 * 24 * 60]);
-            $request->session()->put('remember_until', now()->addDays(30)->timestamp);
-        }
 
         AuditLog::record('user.login');
 

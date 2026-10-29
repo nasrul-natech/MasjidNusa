@@ -40,6 +40,10 @@ class ArticleAdminController extends Controller
         $data['slug'] = Str::slug($data['title']) . '-' . time();
         $data['author_id'] = auth()->id();
 
+        if ($data['status'] === 'publish' && !auth()->user()->can('publish_content')) {
+            return back()->with('error', 'Anda tidak memiliki izin menerbitkan konten.')->withInput();
+        }
+
         if ($data['status'] === 'publish') {
             $data['published_at'] = now();
         }
@@ -69,6 +73,10 @@ class ArticleAdminController extends Controller
             'thumbnail' => ['nullable', 'image', 'max:4096'],
         ]);
 
+        if ($data['status'] === 'publish' && $article->status !== 'publish' && !auth()->user()->can('publish_content')) {
+            return back()->with('error', 'Anda tidak memiliki izin menerbitkan konten.')->withInput();
+        }
+
         if ($data['status'] === 'publish' && !$article->published_at) {
             $data['published_at'] = now();
         }
@@ -89,6 +97,10 @@ class ArticleAdminController extends Controller
 
     public function publish(int $id)
     {
+        if (!auth()->user()->can('publish_content')) {
+            return back()->with('error', 'Anda tidak memiliki izin menerbitkan konten.');
+        }
+
         $article = Article::findOrFail($id);
         $article->update(['status' => 'publish', 'published_at' => now()]);
         return back()->with('success', 'Artikel dipublikasikan.');

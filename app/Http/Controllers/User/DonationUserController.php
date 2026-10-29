@@ -11,8 +11,10 @@ use App\Models\PaymentProof;
 use App\Models\PaymentTransaction;
 use App\Services\DuitkuService;
 use App\Services\NotificationService;
+use App\Support\PaymentProofStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -122,34 +124,63 @@ class DonationUserController extends Controller
             'proof' => ['required', 'image', 'max:5120'],
         ]);
 
-        $transaction = PaymentTransaction::findOrFail($transactionId);
+        $transaction = PaymentTransaction::with('donation')->findOrFail($transactionId);
         $donation = $transaction->donation;
 
-        if ($donation->user_id !== auth()->id()) {
+        if (!$donation || (int) $donation->user_id !== (int) auth()->id()) {
             abort(403);
         }
 
-        if (!in_array($donation->status, [Donation::STATUS_PENDING, Donation::STATUS_WAITING_VERIFICATION], true)) {
-            return back()->with('error', 'Bukti tidak bisa diunggah untuk donasi yang sudah selesai.');
-        }
-
-        if ($transaction->proof?->image) {
-            Storage::disk('local')->delete($transaction->proof->image);
-            Storage::disk('public')->delete($transaction->proof->image);
+        if ($donation->payment_method_type !== 'manual') {
+            return back()->with('error', 'Bukti transfer hanya untuk pembayaran manual.');
         }
 
         $path = $request->file('proof')->store('payment-proofs', 'local');
 
-        $transaction->proof()->updateOrCreate(
-            ['transaction_id' => $transaction->id],
-            [
-                'image' => $path,
-                'uploaded_at' => now(),
-            ]
-        );
+        try {
+            $saved = DB::transaction(function () use ($transaction, $donation, $path) {
+                $lockedDonation = Donation::query()->whereKey($donation->id)->lockForUpdate()->first();
+                $lockedTransaction = PaymentTransaction::query()->whereKey($transaction->id)->lockForUpdate()->first();
 
-        if ($donation->status === Donation::STATUS_PENDING) {
-            $donation->update(['status' => Donation::STATUS_WAITING_VERIFICATION]);
+                if (
+                    !$lockedDonation
+                    || !$lockedTransaction
+                    || (int) $lockedTransaction->donation_id !== (int) $lockedDonation->id
+                    || $lockedDonation->payment_method_type !== 'manual'
+                    || !in_array($lockedDonation->status, [Donation::STATUS_PENDING, Donation::STATUS_WAITING_VERIFICATION], true)
+                ) {
+                    return false;
+                }
+
+                $existing = $lockedTransaction->proof;
+                if ($existing?->image && $existing->image !== $path) {
+                    Storage::disk('local')->delete($existing->image);
+                    Storage::disk('public')->delete($existing->image);
+                }
+
+                $lockedTransaction->proof()->updateOrCreate(
+                    ['transaction_id' => $lockedTransaction->id],
+                    [
+                        'image' => $path,
+                        'uploaded_at' => now(),
+                    ]
+                );
+
+                if ($lockedDonation->status === Donation::STATUS_PENDING) {
+                    $lockedDonation->update(['status' => Donation::STATUS_WAITING_VERIFICATION]);
+                }
+
+                return true;
+            });
+        } catch (\Throwable $e) {
+            Storage::disk('local')->delete($path);
+            throw $e;
+        }
+
+        if (!$saved) {
+            Storage::disk('local')->delete($path);
+
+            return back()->with('error', 'Bukti tidak bisa diunggah untuk donasi yang sudah selesai.');
         }
 
         return redirect()->route('user.donations.history')->with('success', 'Bukti transfer berhasil diupload. Menunggu verifikasi admin.');
@@ -159,29 +190,28 @@ class DonationUserController extends Controller
     {
         $donation = $proof->transaction?->donation;
         $user = auth()->user();
-        $allowed = $donation && (
-            (int) $donation->user_id === (int) $user->id
-            || $user->hasAnyRole(['admin_keuangan', 'super_admin'])
-        );
 
-        if (!$allowed || !$proof->image) {
+        if (!$donation || !$proof->image || !$user || !$this->canViewProof($user, $donation)) {
             abort(403);
         }
 
         $path = $proof->image;
-
-        if (!Storage::disk('local')->exists($path) && Storage::disk('public')->exists($path)) {
-            Storage::disk('local')->put($path, Storage::disk('public')->get($path));
-            if (Storage::disk('local')->exists($path)) {
-                Storage::disk('public')->delete($path);
-            }
-        }
+        PaymentProofStorage::migrateToPrivate($path);
 
         if (!Storage::disk('local')->exists($path)) {
             abort(404);
         }
 
         return Storage::disk('local')->response($path);
+    }
+
+    private function canViewProof($user, Donation $donation): bool
+    {
+        if ((int) $donation->user_id === (int) $user->id) {
+            return true;
+        }
+
+        return $user->can('verify_payments') && (bool) request()->session()->get('two_factor_verified');
     }
 
     private function rejectDisabledMethod(string $method): ?JsonResponse

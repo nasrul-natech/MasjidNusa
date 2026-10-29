@@ -36,7 +36,7 @@ class PaymentVerificationController extends Controller
         }
 
         $verifierId = auth()->id();
-        $settled = $donation->settle(Donation::STATUS_VERIFIED, function (Donation $locked) use ($verifierId) {
+        $settled = $donation->settle(Donation::STATUS_VERIFIED, [Donation::STATUS_WAITING_VERIFICATION], function (Donation $locked) use ($verifierId) {
             $transaction = $locked->latestTransaction()->first();
             if (!$transaction) {
                 return;
@@ -71,7 +71,7 @@ class PaymentVerificationController extends Controller
             return back()->with('error', 'Pembayaran yang sudah selesai tidak bisa ditolak.');
         }
 
-        $closed = $donation->closeIfOpen(Donation::STATUS_REJECTED, function (Donation $locked) {
+        $closed = $donation->closeIfOpen(Donation::STATUS_REJECTED, [Donation::STATUS_PENDING, Donation::STATUS_WAITING_VERIFICATION], function (Donation $locked) {
             $transaction = $locked->latestTransaction()->first();
             if ($transaction) {
                 $transaction->update(['status' => 'failed']);

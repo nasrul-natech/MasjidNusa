@@ -14,4 +14,4 @@ Artisan::command('inspire', function () {
 Schedule::command(FetchPrayerSchedules::class)->monthlyOn(25, '02:00');
 
 // Setiap menit, cek dan kirim notifikasi adzan
-Schedule::command(SendAdzanNotifications::class)->everyMinute();
+Schedule::command(SendAdzanNotifications::class)->everyMinute()->withoutOverlapping(2);

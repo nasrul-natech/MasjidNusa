@@ -96,4 +96,39 @@ class DuitkuService
 
         return $signature === ($data['signature'] ?? '');
     }
+
+    /**
+     * Transaksi lokal yang cocok dengan callback bertanda tangan sah.
+     * Nominal, merchant, referensi, dan metode harus sama. Kalau tidak, null.
+     */
+    public function matchingTransaction(Donation $donation, array $data): ?PaymentTransaction
+    {
+        if (!$this->config || $donation->payment_method_type !== 'duitku') {
+            return null;
+        }
+
+        if ((string) ($data['merchantCode'] ?? '') !== (string) $this->config->merchant_code) {
+            return null;
+        }
+
+        if (!$this->amountsMatch((int) $donation->amount, $data['amount'] ?? null)) {
+            return null;
+        }
+
+        $reference = trim((string) ($data['reference'] ?? ''));
+        if ($reference === '') {
+            return null;
+        }
+
+        return $donation->transactions()->where('reference_number', $reference)->first();
+    }
+
+    private function amountsMatch(int $expected, mixed $payload): bool
+    {
+        if (!is_numeric($payload)) {
+            return false;
+        }
+
+        return (int) round((float) $payload) === $expected;
+    }
 }

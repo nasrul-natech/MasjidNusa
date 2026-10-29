@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Donation;
 use App\Models\EmailTemplate;
 use App\Models\SmtpSetting;
+use App\Models\SystemModule;
 use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +37,10 @@ class NotificationService
 
     public function sendPushNotification(User $user, string $title, string $body, ?string $link = null): void
     {
+        if (!$user->is_active || !SystemModule::isActive('push_notification')) {
+            return;
+        }
+
         try {
             $user->notify(new \App\Notifications\PushNotification($title, $body, $link));
         } catch (\Exception $e) {

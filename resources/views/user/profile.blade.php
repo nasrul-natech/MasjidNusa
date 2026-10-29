@@ -86,6 +86,18 @@
                 </div>
             </div>
 
+            @if(\App\Support\GoogleAuth::isConfigured() && $user->isJamaah())
+            <div class="card p-5 space-y-3">
+                <h3 class="font-semibold text-gray-800">Akun Google</h3>
+                @if($user->google_id)
+                <p class="text-sm text-gray-600">Akun ini sudah ditautkan ke Google.</p>
+                @else
+                <p class="text-sm text-gray-600">Tautkan Google agar bisa masuk dengan akun yang sama. Penautan tidak terjadi otomatis.</p>
+                <a href="{{ route('auth.google', ['intent' => 'link']) }}" class="btn-primary inline-flex px-4 py-2.5">Tautkan Google</a>
+                @endif
+            </div>
+            @endif
+
             <button type="submit" class="btn-primary w-full py-3">Simpan Perubahan</button>
         </form>
     </div>

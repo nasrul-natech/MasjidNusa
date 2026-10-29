@@ -154,7 +154,7 @@ class QuranApiService
 
             $surahMap = $this->getSurahList()->keyBy('number');
 
-            return collect($response->json('verses', []))->map(function (array $verse) use ($surahMap) {
+            return collect($response->json('verses', []))->map(function (array $verse) use ($surahMap, $juzNumber) {
                 $surahNum = isset($verse['verse_key'])
                     ? (int) explode(':', $verse['verse_key'])[0]
                     : 0;

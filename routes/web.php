@@ -110,12 +110,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
+});
 
-    // Google OAuth (jamaah only)
-    Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
-    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
-    // Two-Factor Authentication
+Route::middleware('pending-two-factor')->group(function () {
     Route::get('/two-factor/challenge', [TwoFactorController::class, 'showChallenge'])->name('two-factor.challenge');
     Route::post('/two-factor/challenge', [TwoFactorController::class, 'verifyChallenge'])->middleware('throttle:10,1');
     Route::get('/two-factor/setup', [TwoFactorController::class, 'showSetup'])->name('two-factor.setup');
@@ -307,10 +307,8 @@ Route::middleware(['auth', 'two-factor', 'role:super_admin'])->prefix('super-adm
 // ===== PUSH SUBSCRIPTION API =====
 Route::middleware('auth')->get('/bukti-transfer/{proof}', [DonationUserController::class, 'showProof'])->name('donations.proof');
 
-Route::middleware(['auth', 'module:push_notification'])->prefix('api')->name('api.')->group(function () {
-    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
-    Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
-});
+Route::middleware('auth')->delete('/api/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('api.push.unsubscribe');
+Route::middleware(['auth', 'module:push_notification'])->post('/api/push/subscribe', [PushSubscriptionController::class, 'store'])->name('api.push.subscribe');
 
 // ===== WEBHOOKS =====
 Route::post('/webhook/duitku/callback', [DuitkuWebhookController::class, 'callback'])->name('webhook.duitku.callback');

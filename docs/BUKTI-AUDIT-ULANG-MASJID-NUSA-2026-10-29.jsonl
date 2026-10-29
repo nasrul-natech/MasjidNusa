@@ -1,0 +1,41 @@
+{"case":"settle_duplicate_and_late_failure","first":true,"second":false,"late_failure":false,"status":"paid","total":10000}
+{"case":"settle_atomic_rollback","status":"pending","total":0}
+{"case":"pending_upload_interleaved_with_settle","status_after_stale_upload":"waiting_verification","total_after_approve":20000}
+{"case":"approve_interleaved_with_reject","settled_after_reject":true,"status":"verified"}
+{"case":"sync_interleaved_with_settle","total":0,"paid_sum":10000}
+{"case":"callback_mismatched_amount_and_reference","http":200,"status":"paid","total":10000,"actual_signed_amount":1000}
+{"case":"html_sanitizer_1","output":"<p>ok<a>link</a></p>"}
+{"case":"html_sanitizer_2","output":"<p><b>allowed</b></p>"}
+{"case":"html_sanitizer_3","output":"<a href=\"https://example.invalid\">safe</a>"}
+{"case":"csv_text","input":"=1+1","output":"'=1+1"}
+{"case":"csv_text","input":"+1+1","output":"'+1+1"}
+{"case":"csv_text","input":"-1+1","output":"'-1+1"}
+{"case":"csv_text","input":"@SUM(1,1)","output":"'@SUM(1,1)"}
+{"case":"csv_text","input":"\t=1+1","output":"\t=1+1"}
+{"case":"safe_redirect","controller":"LoginController","input":"/user/profile","output":"/user/profile"}
+{"case":"safe_redirect","controller":"LoginController","input":"//example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"LoginController","input":"/\\example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"LoginController","input":"https://example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"GoogleAuthController","input":"/user/profile","output":"/user/profile"}
+{"case":"safe_redirect","controller":"GoogleAuthController","input":"//example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"GoogleAuthController","input":"/\\example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"GoogleAuthController","input":"https://example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"TwoFactorController","input":"/user/profile","output":"/user/profile"}
+{"case":"safe_redirect","controller":"TwoFactorController","input":"//example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"TwoFactorController","input":"/\\example.invalid","output":"/"}
+{"case":"safe_redirect","controller":"TwoFactorController","input":"https://example.invalid","output":"/"}
+{"case":"timezone","province":"DKI Jakarta","timezone":"Asia/Jakarta"}
+{"case":"timezone","province":"Sulawesi Selatan","timezone":"Asia/Makassar"}
+{"case":"timezone","province":"Papua","timezone":"Asia/Jayapura"}
+{"case":"timezone","province":"Kalimantan Barat","timezone":"Asia/Jakarta"}
+{"case":"timezone","province":"Kalimantan Timur","timezone":"Asia/Makassar"}
+{"case":"route_guards","route":"password.email","middleware":["web","guest","throttle:5,1"]}
+{"case":"route_guards","route":"two-factor.challenge","middleware":["web","guest"]}
+{"case":"route_guards","route":"two-factor.setup","middleware":["web","guest"]}
+{"case":"route_guards","route":"user.donations.quick","middleware":["web","auth","module:donasi"]}
+{"case":"route_guards","route":"admin.keuangan.verify-payment.approve","middleware":["web","auth","two-factor","role:admin_keuangan,super_admin","module:donasi","permission:verify_payments"]}
+{"case":"route_guards","route":"admin.media-it.articles.publish","middleware":["web","auth","two-factor","role:admin_media_it,super_admin","permission:manage_articles"]}
+{"case":"route_guards","route":"donations.proof","middleware":["web","auth"]}
+{"case":"route_guards","route":"api.push.subscribe","middleware":["web","auth","module:push_notification"]}
+{"case":"actual_uploadProof_controller_interleaving","http":302,"status_after_upload":"waiting_verification","total_after_second_settle":20000,"validation_and_file_write":"stubbed; controller and models actual"}
+{"case":"actual_adzan_command","offset_minutes":5,"timezones":["WIB","WITA","WIT"],"module_active":false,"first_run":[{"user_id":1,"active":true},{"user_id":2,"active":true},{"user_id":3,"active":false}],"two_runs_total":6,"network_calls":0}

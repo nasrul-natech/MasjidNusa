@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\GoogleAuth;
+use App\Support\RememberLogin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -13,8 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
-    const REMEMBER_DAYS = 30;
-
     public function showForm(Request $request)
     {
         return view('auth.login', [
@@ -84,12 +83,12 @@ class LoginController extends Controller
             return redirect()->route('two-factor.challenge');
         }
 
+        RememberLogin::start($remember);
         Auth::login($user, $remember);
         $request->session()->regenerate();
-
-        if ($remember) {
-            config(['session.lifetime' => self::REMEMBER_DAYS * 24 * 60]);
-            $request->session()->put('remember_until', now()->addDays(self::REMEMBER_DAYS)->timestamp);
+        RememberLogin::persist($request, $remember);
+        if (!$remember) {
+            RememberLogin::forget();
         }
 
         AuditLog::record('user.login');
@@ -108,7 +107,7 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/')->with('success', 'Berhasil logout.');
+        return redirect('/?logout=1')->with('success', 'Berhasil logout.');
     }
 
     private function safeInternalPath(?string $redirect): string

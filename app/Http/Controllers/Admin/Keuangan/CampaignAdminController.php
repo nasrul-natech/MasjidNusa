@@ -8,6 +8,7 @@ use App\Models\Donation;
 use App\Models\DonationCampaign;
 use App\Models\DonationCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -185,34 +186,45 @@ class CampaignAdminController extends Controller
             'reason' => ['required', 'string', 'max:255'],
         ]);
 
-        $before = $campaign->collected_amount;
-        $campaign->update(['collected_amount' => $data['collected_amount']]);
+        DB::transaction(function () use ($campaign, $data) {
+            $locked = DonationCampaign::query()->whereKey($campaign->id)->lockForUpdate()->firstOrFail();
+            $before = (int) $locked->collected_amount;
+            $locked->update(['collected_amount' => $data['collected_amount']]);
+            $campaign->setRawAttributes($locked->fresh()->getAttributes(), true);
 
-        AuditLog::record('campaign.amount_adjusted', $campaign, [
-            'collected_amount' => $before,
-        ], [
-            'collected_amount' => (int) $data['collected_amount'],
-            'reason' => $data['reason'],
-        ]);
+            AuditLog::record('campaign.amount_adjusted', $campaign, [
+                'collected_amount' => $before,
+            ], [
+                'collected_amount' => (int) $data['collected_amount'],
+                'reason' => $data['reason'],
+            ]);
+        });
 
         return back()->with('success', 'Jumlah terkumpul berhasil disesuaikan.');
     }
 
     public function syncAmount(DonationCampaign $campaign)
     {
-        $actualSum = $campaign->donations()
-            ->whereIn('status', ['verified', 'paid'])
-            ->sum('amount');
+        $actualSum = 0;
+        $before = 0;
 
-        $before = $campaign->collected_amount;
-        $campaign->update(['collected_amount' => $actualSum]);
+        DB::transaction(function () use ($campaign, &$actualSum, &$before) {
+            $locked = DonationCampaign::query()->whereKey($campaign->id)->lockForUpdate()->firstOrFail();
+            $actualSum = (int) Donation::query()
+                ->where('campaign_id', $locked->id)
+                ->whereIn('status', [Donation::STATUS_VERIFIED, Donation::STATUS_PAID])
+                ->sum('amount');
+            $before = (int) $locked->collected_amount;
+            $locked->update(['collected_amount' => $actualSum]);
+            $campaign->setRawAttributes($locked->fresh()->getAttributes(), true);
 
-        AuditLog::record('campaign.amount_synced', $campaign, [
-            'collected_amount' => $before,
-        ], [
-            'collected_amount' => (int) $actualSum,
-            'reason' => 'Sinkron dari total donasi terverifikasi',
-        ]);
+            AuditLog::record('campaign.amount_synced', $campaign, [
+                'collected_amount' => $before,
+            ], [
+                'collected_amount' => $actualSum,
+                'reason' => 'Sinkron dari total donasi terverifikasi',
+            ]);
+        });
 
         $diff = $actualSum - $before;
         $msg = $diff === 0

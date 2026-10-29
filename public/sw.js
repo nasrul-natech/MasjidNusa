@@ -3,12 +3,11 @@
  * Handles caching, push notifications, and offline support
  */
 
-const CACHE_VERSION = 'masjidnusa-v4';
+const CACHE_VERSION = 'masjidnusa-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
 const STATIC_ASSETS = [
-    '/',
     '/offline',
 ];
 
@@ -43,7 +42,7 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    const privatePage = ['/user', '/admin', '/super-admin', '/login', '/two-factor', '/bukti-transfer']
+    const privatePage = ['/user', '/admin', '/super-admin', '/login', '/two-factor', '/bukti-transfer', '/reset-password', '/forgot-password', '/register', '/auth', '/quran/khatam']
         .some((prefix) => url.pathname === prefix || url.pathname.startsWith(prefix + '/'));
 
     // Skip non-GET, cross-origin, API, and private pages (never cache account data)
@@ -74,12 +73,15 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Network-first for pages
+    // Network-first for pages. HTML akun (Cache-Control private/no-store) tidak disimpan.
     event.respondWith(
         fetch(request)
             .then((response) => {
-                const clone = response.clone();
-                caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+                const cacheControl = response.headers.get('Cache-Control') || '';
+                if (response.ok && !cacheControl.includes('no-store')) {
+                    const clone = response.clone();
+                    caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+                }
                 return response;
             })
             .catch(() => {
@@ -88,6 +90,12 @@ self.addEventListener('fetch', (event) => {
                 });
             })
     );
+});
+
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'CLEAR_DYNAMIC_CACHE') {
+        event.waitUntil(caches.delete(DYNAMIC_CACHE));
+    }
 });
 
 // Push notification handler
@@ -110,6 +118,8 @@ self.addEventListener('push', (event) => {
     }
 
     const isAdzan = data.data && data.data.type === 'adzan';
+    const prayerName = data.data && data.data.prayer ? data.data.prayer : '';
+    const prayerTime = data.data && data.data.time ? data.data.time : '';
 
     const options = {
         body: data.body,
@@ -132,8 +142,8 @@ self.addEventListener('push', (event) => {
             clients.forEach(client => {
                 client.postMessage({
                     type: 'ADZAN_TRIGGER',
-                    prayer: data.data.prayer,
-                    time: data.data.time,
+                    prayer: prayerName,
+                    time: prayerTime,
                 });
             });
         })

@@ -52,56 +52,30 @@ class Donation extends Model
     }
 
     /**
-     * Pindah ke status lunas sekali saja, lalu naikkan saldo kampanye.
-     * Pemanggilan ulang pada donasi yang sudah lunas tidak mengubah saldo.
+     * Pindah ke status lunas sekali saja, dari status asal yang diizinkan, lalu naikkan saldo.
+     * Donasi yang sudah lunas atau statusnya sudah berubah tidak menambah saldo lagi.
      */
-    public function settle(string $status, ?callable $beforeCommit = null): bool
+    public function settle(string $status, array $fromStatuses, ?callable $beforeCommit = null): bool
     {
-        $changed = false;
-
-        DB::transaction(function () use ($status, $beforeCommit, &$changed) {
-            $locked = static::query()->whereKey($this->getKey())->lockForUpdate()->first();
-
-            if (!$locked || $locked->isSettled()) {
-                if ($locked) {
-                    $this->setRawAttributes($locked->getAttributes(), true);
-                    $this->syncOriginal();
-                }
-
-                return;
-            }
-
-            $locked->update(['status' => $status]);
-
-            if ($locked->campaign_id) {
-                DonationCampaign::query()
-                    ->whereKey($locked->campaign_id)
-                    ->increment('collected_amount', $locked->amount);
-            }
-
-            if ($beforeCommit) {
-                $beforeCommit($locked);
-            }
-
-            $this->setRawAttributes($locked->fresh()->getAttributes(), true);
-            $this->syncOriginal();
-            $changed = true;
-        });
-
-        return $changed;
+        return $this->transition($status, $fromStatuses, true, $beforeCommit);
     }
 
     /**
-     * Tutup donasi yang belum lunas. Status final tidak ditimpa dan saldo tidak dikurangi.
+     * Tutup donasi yang belum lunas. Status di luar daftar asal tidak ditimpa dan saldo tidak dikurangi.
      */
-    public function closeIfOpen(string $status, ?callable $beforeCommit = null): bool
+    public function closeIfOpen(string $status, array $fromStatuses, ?callable $beforeCommit = null): bool
+    {
+        return $this->transition($status, $fromStatuses, false, $beforeCommit);
+    }
+
+    private function transition(string $status, array $fromStatuses, bool $collect, ?callable $beforeCommit): bool
     {
         $changed = false;
 
-        DB::transaction(function () use ($status, $beforeCommit, &$changed) {
+        DB::transaction(function () use ($status, $fromStatuses, $collect, $beforeCommit, &$changed) {
             $locked = static::query()->whereKey($this->getKey())->lockForUpdate()->first();
 
-            if (!$locked || $locked->isSettled()) {
+            if (!$locked || !in_array($locked->status, $fromStatuses, true) || $locked->isSettled()) {
                 if ($locked) {
                     $this->setRawAttributes($locked->getAttributes(), true);
                     $this->syncOriginal();
@@ -111,6 +85,11 @@ class Donation extends Model
             }
 
             $locked->update(['status' => $status]);
+
+            if ($collect && $locked->campaign_id) {
+                $campaign = DonationCampaign::query()->whereKey($locked->campaign_id)->lockForUpdate()->first();
+                $campaign?->increment('collected_amount', $locked->amount);
+            }
 
             if ($beforeCommit) {
                 $beforeCommit($locked);

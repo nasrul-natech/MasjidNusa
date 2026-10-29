@@ -51,6 +51,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_remembered_at' => 'datetime',
         ];
     }
 

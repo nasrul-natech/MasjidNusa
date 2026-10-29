@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\TableSort;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -90,29 +91,40 @@ class UserController extends Controller
         $willBeActive = $request->has('is_active')
             ? $request->boolean('is_active')
             : $user->is_active;
-        $isLastActiveSuperAdmin = $user->is_active
-            && $user->hasRole('super_admin')
-            && User::role('super_admin')->where('is_active', true)->count() <= 1;
 
-        if ($isLastActiveSuperAdmin && (!$willBeActive || $data['role'] !== 'super_admin')) {
+        $blocked = false;
+        DB::transaction(function () use ($request, $user, $data, $willBeActive, &$blocked) {
+            $this->lockSuperAdmins();
+            $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
+            if (!$fresh) {
+                return;
+            }
+            if ($this->removesLastActiveSuperAdmin($fresh, $willBeActive && $data['role'] === 'super_admin')) {
+                $blocked = true;
+
+                return;
+            }
+
+            $wasActive = $fresh->is_active;
+
+            $fresh->update([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'is_active' => $willBeActive,
+            ]);
+
+            if ($wasActive && !$fresh->is_active) {
+                $fresh->revokeAccess();
+            }
+
+            $fresh->syncRoles([$data['role']]);
+            AuditLog::record('user.updated', $fresh);
+        });
+
+        if ($blocked) {
             return back()->with('error', 'Tidak bisa menonaktifkan atau menurunkan super admin terakhir yang masih aktif.')->withInput();
         }
-
-        $wasActive = $user->is_active;
-
-        $user->update([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'is_active' => $data['is_active'] ?? $user->is_active,
-        ]);
-
-        if ($wasActive && !$user->is_active) {
-            $user->revokeAccess();
-        }
-
-        $user->syncRoles([$data['role']]);
-        AuditLog::record('user.updated', $user);
 
         return redirect()->route('super-admin.users.index')->with('success', 'User berhasil diperbarui.');
     }
@@ -122,7 +134,25 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Anda tidak bisa menghapus akun sendiri.');
         }
-        $user->delete();
+
+        $blocked = false;
+        DB::transaction(function () use ($user, &$blocked) {
+            $this->lockSuperAdmins();
+            $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
+            if ($fresh && $this->removesLastActiveSuperAdmin($fresh, false)) {
+                $blocked = true;
+
+                return;
+            }
+
+            AuditLog::record('user.deleted', $fresh);
+            $fresh?->delete();
+        });
+
+        if ($blocked) {
+            return back()->with('error', 'Tidak bisa menghapus super admin terakhir yang masih aktif.');
+        }
+
         return back()->with('success', 'User berhasil dihapus.');
     }
 
@@ -134,19 +164,31 @@ class UserController extends Controller
             return back()->with('error', 'Anda tidak bisa menonaktifkan akun sendiri.');
         }
 
-        if ($user->is_active && $user->hasRole('super_admin')) {
-            $activeSuperAdmins = User::role('super_admin')->where('is_active', true)->count();
-            if ($activeSuperAdmins <= 1) {
-                return back()->with('error', 'Tidak bisa menonaktifkan super admin terakhir yang masih aktif.');
+        $blocked = false;
+        $activating = false;
+        DB::transaction(function () use ($user, &$blocked, &$activating) {
+            $this->lockSuperAdmins();
+            $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
+            if (!$fresh) {
+                return;
             }
-        }
+            $activating = !$fresh->is_active;
+            if (!$activating && $this->removesLastActiveSuperAdmin($fresh, false)) {
+                $blocked = true;
 
-        $activating = ! $user->is_active;
-        $user->update(['is_active' => $activating]);
-        if (! $activating) {
-            $user->revokeAccess();
+                return;
+            }
+
+            $fresh->update(['is_active' => $activating]);
+            if (!$activating) {
+                $fresh->revokeAccess();
+            }
+            AuditLog::record($activating ? 'user.activated' : 'user.deactivated', $fresh);
+        });
+
+        if ($blocked) {
+            return back()->with('error', 'Tidak bisa menonaktifkan super admin terakhir yang masih aktif.');
         }
-        AuditLog::record($activating ? 'user.activated' : 'user.deactivated', $user);
 
         $message = $activating ? 'User diaktifkan kembali.' : 'User dinonaktifkan.';
 
@@ -186,25 +228,31 @@ class UserController extends Controller
         $skipped = 0;
 
         if ($data['action'] === 'deactivate') {
-            foreach ($users as $user) {
-                if (! $user->is_active) {
-                    $skipped++;
+            DB::transaction(function () use ($users, &$processed, &$skipped) {
+                $this->lockSuperAdmins();
+                $active = User::role('super_admin')->where('is_active', true)->count();
 
-                    continue;
-                }
-                if ($user->hasRole('super_admin')) {
-                    $activeSuperAdmins = User::role('super_admin')->where('is_active', true)->count();
-                    if ($activeSuperAdmins <= 1) {
+                foreach ($users as $user) {
+                    $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
+                    if (!$fresh || !$fresh->is_active) {
                         $skipped++;
 
                         continue;
                     }
+                    if ($fresh->hasRole('super_admin')) {
+                        if ($active <= 1) {
+                            $skipped++;
+
+                            continue;
+                        }
+                        $active--;
+                    }
+                    $fresh->update(['is_active' => false]);
+                    $fresh->revokeAccess();
+                    AuditLog::record('user.deactivated', $fresh);
+                    $processed++;
                 }
-                $user->update(['is_active' => false]);
-                $user->revokeAccess();
-                AuditLog::record('user.deactivated', $user);
-                $processed++;
-            }
+            });
 
             $message = "{$processed} user dinonaktifkan.";
             if ($skipped > 0) {
@@ -234,19 +282,30 @@ class UserController extends Controller
             return back()->with('success', $message);
         }
 
-        foreach ($users as $user) {
-            if ($user->hasRole('super_admin')) {
-                $superAdminCount = User::role('super_admin')->count();
-                if ($superAdminCount <= 1) {
+        DB::transaction(function () use ($users, &$processed, &$skipped) {
+            $this->lockSuperAdmins();
+            $active = User::role('super_admin')->where('is_active', true)->count();
+
+            foreach ($users as $user) {
+                $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
+                if (!$fresh) {
                     $skipped++;
 
                     continue;
                 }
+                if ($fresh->hasRole('super_admin') && $fresh->is_active) {
+                    if ($active <= 1) {
+                        $skipped++;
+
+                        continue;
+                    }
+                    $active--;
+                }
+                AuditLog::record('user.deleted', $fresh);
+                $fresh->delete();
+                $processed++;
             }
-            AuditLog::record('user.deleted', $user);
-            $user->delete();
-            $processed++;
-        }
+        });
 
         $message = "{$processed} user dihapus.";
         if ($skipped > 0) {
@@ -254,5 +313,33 @@ class UserController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    private function lockSuperAdmins(): void
+    {
+        $roleTable = config('permission.table_names.roles', 'roles');
+        $pivotTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+        $ids = DB::table($pivotTable)
+            ->join($roleTable, "{$roleTable}.id", '=', "{$pivotTable}.role_id")
+            ->where("{$roleTable}.name", 'super_admin')
+            ->where("{$pivotTable}.model_type", User::class)
+            ->orderBy("{$pivotTable}.model_id")
+            ->pluck("{$pivotTable}.model_id");
+
+        if ($ids->isNotEmpty()) {
+            User::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+        }
+    }
+
+    private function removesLastActiveSuperAdmin(?User $user, bool $willRemainActiveSuperAdmin): bool
+    {
+        if (!$user || !$user->is_active || !$user->hasRole('super_admin')) {
+            return false;
+        }
+
+        $active = User::role('super_admin')->where('is_active', true)->count();
+
+        return $active <= 1 && !$willRemainActiveSuperAdmin;
     }
 }

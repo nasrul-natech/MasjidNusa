@@ -4,10 +4,12 @@ namespace App\Console\Commands;
 
 use App\Models\PrayerLocation;
 use App\Models\PrayerTime;
+use App\Models\SystemModule;
 use App\Models\UserAdzanSetting;
 use App\Notifications\AdzanNotification;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SendAdzanNotifications extends Command
@@ -21,6 +23,12 @@ class SendAdzanNotifications extends Command
 
     public function handle(): int
     {
+        if (!SystemModule::isActive('push_notification')) {
+            $this->info('Modul push notification nonaktif. Tidak ada pengiriman.');
+
+            return self::SUCCESS;
+        }
+
         $sent = 0;
 
         foreach (PrayerLocation::all() as $location) {
@@ -59,7 +67,7 @@ class SendAdzanNotifications extends Command
                 $column = $prayer.'_enabled';
 
                 foreach ($settings as $setting) {
-                    if (!$setting->user || !$setting->{$column}) {
+                    if (!$setting->user || !$setting->user->is_active || !$setting->{$column}) {
                         continue;
                     }
 
@@ -72,11 +80,31 @@ class SendAdzanNotifications extends Command
                         continue;
                     }
 
+                    $recorded = DB::table('adzan_notification_deliveries')->insertOrIgnore([
+                        'user_id' => $setting->user_id,
+                        'location_id' => $location->id,
+                        'prayer' => $prayer,
+                        'sent_on' => $localNow->toDateString(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    if ($recorded === 0) {
+                        continue;
+                    }
+
                     try {
                         $cityName = $location->city_name ?: 'lokasi Anda';
                         $setting->user->notify(new AdzanNotification($prayer, $time, $cityName, $minutesBefore));
                         $sent++;
                     } catch (\Throwable $e) {
+                        DB::table('adzan_notification_deliveries')
+                            ->where('user_id', $setting->user_id)
+                            ->where('location_id', $location->id)
+                            ->where('prayer', $prayer)
+                            ->where('sent_on', $localNow->toDateString())
+                            ->delete();
+
                         Log::warning('Gagal kirim notif adzan', [
                             'user_id' => $setting->user_id,
                             'prayer' => $prayer,

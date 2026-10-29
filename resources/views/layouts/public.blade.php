@@ -311,6 +311,18 @@
     {{-- Adzan Client Timer --}}
     @include('components.adzan-client')
 
+    @if(request()->boolean('logout'))
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(function (registration) {
+            if (registration && registration.active) {
+                registration.active.postMessage({ type: 'CLEAR_DYNAMIC_CACHE' });
+            }
+        });
+    }
+    </script>
+    @endif
+
     @stack('scripts')
 </body>
 </html>
