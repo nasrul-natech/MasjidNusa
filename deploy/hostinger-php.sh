@@ -41,3 +41,36 @@ fi
 
 export PHP_BIN
 echo "==> PHP CLI: $PHP_BIN ($($PHP_BIN -r 'echo PHP_VERSION;'))"
+
+# Tolak perintah yang mengosongkan database produksi.
+artisan_safe() {
+  local joined="$*"
+  case "$joined" in
+    *migrate:fresh*|*migrate:refresh*|*migrate:reset*|*db:wipe*|*schema:drop*|*db:seed*)
+      echo "DITOLAK: '$joined' bisa menghapus isi database. Tidak dijalankan."
+      exit 1
+      ;;
+  esac
+  "$PHP_BIN" artisan "$@"
+}
+
+# Lewati npm bila aset sudah ada. Kalau belum, pasang dependency Vite lalu build.
+npm_build_assets() {
+  if [ -f public/build/manifest.json ]; then
+    echo "==> public/build sudah ada — npm dilewati."
+    return 0
+  fi
+
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "ERROR: public/build belum ada dan npm tidak tersedia. Build di lokal lalu unggah public/build."
+    exit 1
+  fi
+
+  echo "==> Build assets (termasuk dependency Vite)..."
+  if [ -f package-lock.json ]; then
+    npm ci --include=dev
+  else
+    npm install --include=dev
+  fi
+  npm run build
+}

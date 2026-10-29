@@ -1,4 +1,4 @@
-@props(['mobileCards' => true])
+@props(['mobileCards' => false])
 
 <div {{ $attributes->merge(['class' => 'card overflow-hidden']) }}>
     <div class="admin-table-wrapper">

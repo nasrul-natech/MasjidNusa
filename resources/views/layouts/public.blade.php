@@ -219,9 +219,9 @@
     function showToast(message, type = 'success', duration = 4000) {
         const icons = { success: '✓', error: '✕', warning: '!', info: 'i' };
         const colors = {
-            success: { bg: '#065f46', icon: '#34d399' },
+            success: { bg: 'var(--color-primary)', icon: 'var(--color-emerald-300)' },
             error:   { bg: '#991b1b', icon: '#f87171' },
-            warning: { bg: '#92400e', icon: '#fbbf24' },
+            warning: { bg: 'var(--color-accent)', icon: '#fff' },
             info:    { bg: '#1e40af', icon: '#60a5fa' }
         };
         const c = colors[type] || colors.info;

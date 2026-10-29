@@ -5,22 +5,33 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\TableSort;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('roles')->orderByDesc('created_at');
+        $query = User::with('roles');
+        TableSort::apply($query, ['name', 'email', 'created_at', 'is_active'], 'created_at', 'desc');
 
-        if ($request->search) {
-            $query->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
         }
         if ($request->role) {
             $query->whereHas('roles', fn($q) => $q->where('name', $request->role));
+        }
+        if ($request->status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($request->status === 'inactive') {
+            $query->where('is_active', false);
         }
 
         $users = $query->paginate(20);
@@ -76,12 +87,29 @@ class UserController extends Controller
             'is_active' => ['boolean'],
         ]);
 
+        $willBeActive = $request->has('is_active')
+            ? $request->boolean('is_active')
+            : $user->is_active;
+        $isLastActiveSuperAdmin = $user->is_active
+            && $user->hasRole('super_admin')
+            && User::role('super_admin')->where('is_active', true)->count() <= 1;
+
+        if ($isLastActiveSuperAdmin && (!$willBeActive || $data['role'] !== 'super_admin')) {
+            return back()->with('error', 'Tidak bisa menonaktifkan atau menurunkan super admin terakhir yang masih aktif.')->withInput();
+        }
+
+        $wasActive = $user->is_active;
+
         $user->update([
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
             'is_active' => $data['is_active'] ?? $user->is_active,
         ]);
+
+        if ($wasActive && !$user->is_active) {
+            $user->revokeAccess();
+        }
 
         $user->syncRoles([$data['role']]);
         AuditLog::record('user.updated', $user);
@@ -101,17 +129,130 @@ class UserController extends Controller
     public function toggleActive(int $id)
     {
         $user = User::findOrFail($id);
-        $user->update(['is_active' => !$user->is_active]);
-        return back()->with('success', 'Status user diperbarui.');
+
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Anda tidak bisa menonaktifkan akun sendiri.');
+        }
+
+        if ($user->is_active && $user->hasRole('super_admin')) {
+            $activeSuperAdmins = User::role('super_admin')->where('is_active', true)->count();
+            if ($activeSuperAdmins <= 1) {
+                return back()->with('error', 'Tidak bisa menonaktifkan super admin terakhir yang masih aktif.');
+            }
+        }
+
+        $activating = ! $user->is_active;
+        $user->update(['is_active' => $activating]);
+        if (! $activating) {
+            $user->revokeAccess();
+        }
+        AuditLog::record($activating ? 'user.activated' : 'user.deactivated', $user);
+
+        $message = $activating ? 'User diaktifkan kembali.' : 'User dinonaktifkan.';
+
+        return back()->with('success', $message);
     }
 
     public function resetPassword(int $id)
     {
         $user = User::findOrFail($id);
-        $newPassword = 'Password123!';
-        $user->update(['password' => Hash::make($newPassword)]);
+        $newPassword = Str::password(16);
+        $user->update(['password' => $newPassword]);
+        $user->revokeAccess();
         AuditLog::record('user.password_reset_by_admin', $user);
 
-        return back()->with('success', "Password direset ke: {$newPassword}");
+        return back()->with('success', "Password baru, simpan sekarang karena hanya tampil sekali: {$newPassword}");
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $data = $request->validate([
+            'action' => ['required', 'in:activate,deactivate,delete'],
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $ids = collect($data['user_ids'])
+            ->unique()
+            ->reject(fn ($id) => (int) $id === auth()->id())
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return back()->with('error', 'Tidak ada user valid yang dipilih (akun sendiri tidak bisa diproses).');
+        }
+
+        $users = User::with('roles')->whereIn('id', $ids)->get();
+        $processed = 0;
+        $skipped = 0;
+
+        if ($data['action'] === 'deactivate') {
+            foreach ($users as $user) {
+                if (! $user->is_active) {
+                    $skipped++;
+
+                    continue;
+                }
+                if ($user->hasRole('super_admin')) {
+                    $activeSuperAdmins = User::role('super_admin')->where('is_active', true)->count();
+                    if ($activeSuperAdmins <= 1) {
+                        $skipped++;
+
+                        continue;
+                    }
+                }
+                $user->update(['is_active' => false]);
+                $user->revokeAccess();
+                AuditLog::record('user.deactivated', $user);
+                $processed++;
+            }
+
+            $message = "{$processed} user dinonaktifkan.";
+            if ($skipped > 0) {
+                $message .= " {$skipped} dilewati.";
+            }
+
+            return back()->with('success', $message);
+        }
+
+        if ($data['action'] === 'activate') {
+            foreach ($users as $user) {
+                if ($user->is_active) {
+                    $skipped++;
+
+                    continue;
+                }
+                $user->update(['is_active' => true]);
+                AuditLog::record('user.activated', $user);
+                $processed++;
+            }
+
+            $message = "{$processed} user diaktifkan.";
+            if ($skipped > 0) {
+                $message .= " {$skipped} dilewati.";
+            }
+
+            return back()->with('success', $message);
+        }
+
+        foreach ($users as $user) {
+            if ($user->hasRole('super_admin')) {
+                $superAdminCount = User::role('super_admin')->count();
+                if ($superAdminCount <= 1) {
+                    $skipped++;
+
+                    continue;
+                }
+            }
+            AuditLog::record('user.deleted', $user);
+            $user->delete();
+            $processed++;
+        }
+
+        $message = "{$processed} user dihapus.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} dilewati.";
+        }
+
+        return back()->with('success', $message);
     }
 }

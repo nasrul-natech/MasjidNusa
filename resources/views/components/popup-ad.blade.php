@@ -1,5 +1,7 @@
 @php
-    $popupAds = \App\Models\PopupAd::active()->get();
+    $popupAds = \App\Models\SystemModule::isActive('popup_ads')
+        ? \App\Models\PopupAd::active()->get()
+        : collect();
 @endphp
 
 @if($popupAds->isNotEmpty())

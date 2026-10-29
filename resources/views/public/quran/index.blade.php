@@ -33,16 +33,16 @@
     @if($lastRead && $lastRead->surah)
     <a href="{{ route('quran.surah', $lastRead->surah->number) }}#ayat-{{ $lastRead->verse_number }}"
         class="block mb-5 p-4 rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
-        style="background: linear-gradient(to right, #047857, #0d9488); color: #fff;">
+        style="background: linear-gradient(to right, var(--color-primary), var(--color-accent)); color: #fff;">
         <div class="flex items-center gap-3">
             <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v16H6V4z"/></svg>
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-xs font-medium" style="color: #a7f3d0;">Lanjut Baca</p>
+                <p class="text-xs font-medium" style="color: color-mix(in srgb, white 75%, var(--color-accent));">Lanjut Baca</p>
                 <p class="font-bold text-sm truncate" style="color: #fff;">{{ $lastRead->surah->name_latin }} - Ayat {{ $lastRead->verse_number }}</p>
             </div>
-            <svg class="w-5 h-5 shrink-0" style="color: #a7f3d0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <svg class="w-5 h-5 shrink-0" style="color: color-mix(in srgb, white 75%, var(--color-accent));" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
     </a>
     @endif
@@ -51,16 +51,16 @@
     {{-- Last Read Card (Guest - from localStorage) --}}
     @guest
     <a href="#" id="last-read-guest" class="mb-5 p-4 rounded-2xl shadow-lg cursor-pointer"
-        style="display:none; background: linear-gradient(to right, #047857, #0d9488); color: #fff;">
+        style="display:none; background: linear-gradient(to right, var(--color-primary), var(--color-accent)); color: #fff;">
         <div class="flex items-center gap-3">
             <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background: rgba(255,255,255,0.2);">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm0 2h12v16H6V4z"/></svg>
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-xs font-medium" style="color: #a7f3d0;">Lanjut Baca</p>
+                <p class="text-xs font-medium" style="color: color-mix(in srgb, white 75%, var(--color-accent));">Lanjut Baca</p>
                 <p class="font-bold text-sm truncate" style="color: #fff;" id="last-read-guest-text"></p>
             </div>
-            <svg class="w-5 h-5 shrink-0" style="color: #a7f3d0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <svg class="w-5 h-5 shrink-0" style="color: color-mix(in srgb, white 75%, var(--color-accent));" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
     </a>
     @endguest

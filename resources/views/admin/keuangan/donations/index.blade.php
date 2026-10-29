@@ -5,11 +5,11 @@
 
 @section('content')
 <x-admin.table-filter>
-    <div class="flex-1 min-w-[200px]">
+    <div class="filter-field-wide">
         <label class="form-label text-xs">Cari</label>
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Kode / nama donatur..." class="form-input text-sm">
     </div>
-    <div class="w-44">
+    <div class="filter-field">
         <label class="form-label text-xs">Status</label>
         <select name="status" class="form-input text-sm">
             <option value="">Semua Status</option>

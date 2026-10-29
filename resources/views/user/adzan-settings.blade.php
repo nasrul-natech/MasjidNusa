@@ -205,6 +205,7 @@
                             class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
                     </div>
 
+                    <p id="active-sound-label" class="text-xs font-semibold text-emerald-700">Suara aktif: {{ ['simple' => 'Sederhana', 'makkah' => 'Makkah', 'madinah' => 'Madinah'][$settings->sound_type] ?? 'Sederhana' }}</p>
                     <button type="button" id="preview-sound" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-emerald-200 text-emerald-700 font-semibold text-sm hover:bg-emerald-50 transition-colors">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         Preview Suara
@@ -323,11 +324,31 @@
         return Promise.resolve(null);
     }
 
+    const soundNames = { simple: 'Sederhana', makkah: 'Makkah', madinah: 'Madinah' };
+    function refreshActiveSoundLabel() {
+        const label = document.getElementById('active-sound-label');
+        if (label) label.textContent = 'Suara aktif: ' + (soundNames[selectedSoundType()] || 'Sederhana');
+    }
+    document.querySelectorAll('#adzan-form input[name="sound_type"]').forEach((input) => {
+        input.addEventListener('change', () => {
+            refreshActiveSoundLabel();
+            if (window.AdzanClient) {
+                AdzanClient.updateSettingsFromForm(collectFormSettings());
+            }
+        });
+    });
+
     syncLocationFromJadwal().then(() => {
         if (window.AdzanClient) {
             AdzanClient.applyServerSettings(serverSettings);
             AdzanClient.reload().then(updateNextPrayerInfo);
         }
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.AdzanClient) {
+            AdzanClient.applyServerSettings({ ...serverSettings, sound_type: selectedSoundType() });
+        }
+        refreshActiveSoundLabel();
     });
 
     const slider = document.getElementById('volume-slider');
@@ -536,21 +557,29 @@
         pushBanner?.classList.remove('hidden');
     }
 
+    function checkboxOn(name) {
+        return [...document.querySelectorAll('#adzan-form input[type="checkbox"][name="' + name + '"]')].some((el) => el.checked);
+    }
+
+    function selectedSoundType() {
+        return document.querySelector('#adzan-form input[name="sound_type"]:checked')?.value || 'simple';
+    }
+
     function collectFormSettings() {
         const form = document.getElementById('adzan-form');
         const formData = new FormData(form);
         return {
             location_id: formData.get('location_id') ? parseInt(formData.get('location_id'), 10) : null,
-            imsak_enabled: formData.get('imsak_enabled') === '1',
-            subuh_enabled: formData.get('subuh_enabled') === '1',
-            dzuhur_enabled: formData.get('dzuhur_enabled') === '1',
-            ashar_enabled: formData.get('ashar_enabled') === '1',
-            maghrib_enabled: formData.get('maghrib_enabled') === '1',
-            isya_enabled: formData.get('isya_enabled') === '1',
-            sound_enabled: formData.get('sound_enabled') === '1',
-            sound_type: formData.get('sound_type'),
+            imsak_enabled: checkboxOn('imsak_enabled'),
+            subuh_enabled: checkboxOn('subuh_enabled'),
+            dzuhur_enabled: checkboxOn('dzuhur_enabled'),
+            ashar_enabled: checkboxOn('ashar_enabled'),
+            maghrib_enabled: checkboxOn('maghrib_enabled'),
+            isya_enabled: checkboxOn('isya_enabled'),
+            sound_enabled: checkboxOn('sound_enabled'),
+            sound_type: selectedSoundType(),
             volume: parseInt(formData.get('volume'), 10),
-            push_enabled: formData.get('push_enabled') === '1',
+            push_enabled: checkboxOn('push_enabled'),
             minutes_before: parseInt(formData.get('minutes_before'), 10) || 0,
         };
     }

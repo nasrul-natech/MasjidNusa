@@ -38,31 +38,30 @@ class DuitkuWebhookController extends Controller
             return response('Not found', 404);
         }
 
-        $transaction = $donation->latestTransaction;
-
         if ($resultCode === '00') {
-            // Payment success
-            $donation->update(['status' => Donation::STATUS_PAID]);
-            if ($transaction) {
+            $settled = $donation->settle(Donation::STATUS_PAID, function (Donation $locked) use ($data) {
+                $transaction = $locked->latestTransaction()->first();
+                if (!$transaction) {
+                    return;
+                }
+
                 $transaction->update([
                     'status' => 'paid',
                     'gateway_response' => array_merge($transaction->gateway_response ?? [], $data),
                     'paid_at' => now(),
                 ]);
-            }
+            });
 
-            // Update campaign collected amount
-            if ($donation->campaign) {
-                $donation->campaign->increment('collected_amount', $donation->amount);
+            if ($settled) {
+                $this->notificationService->sendPaymentSuccess($donation->fresh());
             }
-
-            // Send notifications
-            $this->notificationService->sendPaymentSuccess($donation);
         } else {
-            $donation->update(['status' => Donation::STATUS_FAILED]);
-            if ($transaction) {
-                $transaction->update(['status' => 'failed', 'gateway_response' => $data]);
-            }
+            $donation->closeIfOpen(Donation::STATUS_FAILED, function (Donation $locked) use ($data) {
+                $transaction = $locked->latestTransaction()->first();
+                if ($transaction) {
+                    $transaction->update(['status' => 'failed', 'gateway_response' => $data]);
+                }
+            });
         }
 
         return response('OK', 200);

@@ -26,24 +26,37 @@ class PaymentVerificationController extends Controller
     public function approve(int $id)
     {
         $donation = Donation::findOrFail($id);
-        $donation->update(['status' => Donation::STATUS_VERIFIED]);
 
-        if ($donation->latestTransaction) {
-            $donation->latestTransaction->update(['status' => 'paid', 'paid_at' => now()]);
+        if ($donation->isSettled()) {
+            return back()->with('success', 'Pembayaran sudah tercatat.');
+        }
 
-            if ($donation->latestTransaction->proof) {
-                $donation->latestTransaction->proof->update([
+        if ($donation->status !== Donation::STATUS_WAITING_VERIFICATION) {
+            return back()->with('error', 'Hanya donasi yang menunggu verifikasi yang bisa disetujui.');
+        }
+
+        $verifierId = auth()->id();
+        $settled = $donation->settle(Donation::STATUS_VERIFIED, function (Donation $locked) use ($verifierId) {
+            $transaction = $locked->latestTransaction()->first();
+            if (!$transaction) {
+                return;
+            }
+
+            $transaction->update(['status' => 'paid', 'paid_at' => now()]);
+
+            if ($transaction->proof) {
+                $transaction->proof->update([
                     'verified_at' => now(),
-                    'verified_by' => auth()->id(),
+                    'verified_by' => $verifierId,
                 ]);
             }
+        });
+
+        if (!$settled) {
+            return back()->with('success', 'Pembayaran sudah tercatat.');
         }
 
-        // Update campaign
-        if ($donation->campaign) {
-            $donation->campaign->increment('collected_amount', $donation->amount);
-        }
-
+        $donation->refresh();
         $this->notificationService->sendPaymentSuccess($donation);
         AuditLog::record('payment.verified', $donation);
 
@@ -53,13 +66,21 @@ class PaymentVerificationController extends Controller
     public function reject(Request $request, int $id)
     {
         $donation = Donation::findOrFail($id);
-        $donation->update(['status' => Donation::STATUS_REJECTED]);
 
-        if ($donation->latestTransaction) {
-            $donation->latestTransaction->update(['status' => 'failed']);
+        if ($donation->isSettled()) {
+            return back()->with('error', 'Pembayaran yang sudah selesai tidak bisa ditolak.');
         }
 
-        AuditLog::record('payment.rejected', $donation);
+        $closed = $donation->closeIfOpen(Donation::STATUS_REJECTED, function (Donation $locked) {
+            $transaction = $locked->latestTransaction()->first();
+            if ($transaction) {
+                $transaction->update(['status' => 'failed']);
+            }
+        });
+
+        if ($closed) {
+            AuditLog::record('payment.rejected', $donation->fresh());
+        }
 
         return back()->with('success', 'Pembayaran ditolak.');
     }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Donation extends Model
 {
@@ -43,6 +44,84 @@ class Donation extends Model
     public function latestTransaction()
     {
         return $this->hasOne(PaymentTransaction::class)->latestOfMany();
+    }
+
+    public function isSettled(): bool
+    {
+        return in_array($this->status, [self::STATUS_PAID, self::STATUS_VERIFIED], true);
+    }
+
+    /**
+     * Pindah ke status lunas sekali saja, lalu naikkan saldo kampanye.
+     * Pemanggilan ulang pada donasi yang sudah lunas tidak mengubah saldo.
+     */
+    public function settle(string $status, ?callable $beforeCommit = null): bool
+    {
+        $changed = false;
+
+        DB::transaction(function () use ($status, $beforeCommit, &$changed) {
+            $locked = static::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            if (!$locked || $locked->isSettled()) {
+                if ($locked) {
+                    $this->setRawAttributes($locked->getAttributes(), true);
+                    $this->syncOriginal();
+                }
+
+                return;
+            }
+
+            $locked->update(['status' => $status]);
+
+            if ($locked->campaign_id) {
+                DonationCampaign::query()
+                    ->whereKey($locked->campaign_id)
+                    ->increment('collected_amount', $locked->amount);
+            }
+
+            if ($beforeCommit) {
+                $beforeCommit($locked);
+            }
+
+            $this->setRawAttributes($locked->fresh()->getAttributes(), true);
+            $this->syncOriginal();
+            $changed = true;
+        });
+
+        return $changed;
+    }
+
+    /**
+     * Tutup donasi yang belum lunas. Status final tidak ditimpa dan saldo tidak dikurangi.
+     */
+    public function closeIfOpen(string $status, ?callable $beforeCommit = null): bool
+    {
+        $changed = false;
+
+        DB::transaction(function () use ($status, $beforeCommit, &$changed) {
+            $locked = static::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            if (!$locked || $locked->isSettled()) {
+                if ($locked) {
+                    $this->setRawAttributes($locked->getAttributes(), true);
+                    $this->syncOriginal();
+                }
+
+                return;
+            }
+
+            $locked->update(['status' => $status]);
+
+            if ($beforeCommit) {
+                $beforeCommit($locked);
+            }
+
+            $this->setRawAttributes($locked->fresh()->getAttributes(), true);
+            $this->syncOriginal();
+            $changed = true;
+        });
+
+        return $changed;
     }
 
     public function getStatusLabelAttribute(): string

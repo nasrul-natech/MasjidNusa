@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -71,6 +72,17 @@ class User extends Authenticatable
     public function adzanSetting()
     {
         return $this->hasOne(UserAdzanSetting::class);
+    }
+
+    public function revokeAccess(): void
+    {
+        $this->forceFill(['remember_token' => null])->save();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $this->id)
+                ->delete();
+        }
     }
 
     public function favoriteDuas()

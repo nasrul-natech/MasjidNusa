@@ -41,10 +41,7 @@ class LoginController extends Controller
         }
 
         $remember = $request->boolean('remember');
-        $redirect = $request->input('redirect', '/');
-        if (!str_starts_with($redirect, '/')) {
-            $redirect = '/';
-        }
+        $redirect = $this->safeInternalPath($request->input('redirect', '/'));
 
         if (!Auth::validate($credentials)) {
             RateLimiter::hit($throttleKey, 60);
@@ -112,5 +109,16 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/')->with('success', 'Berhasil logout.');
+    }
+
+    private function safeInternalPath(?string $redirect): string
+    {
+        $redirect = $redirect ?: '/';
+
+        if (!str_starts_with($redirect, '/') || str_starts_with($redirect, '//') || str_contains($redirect, '\\') || str_contains($redirect, ':')) {
+            return '/';
+        }
+
+        return $redirect;
     }
 }

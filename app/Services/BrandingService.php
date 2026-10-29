@@ -69,6 +69,33 @@ class BrandingService
         return $this->get('accent_color');
     }
 
+    public function cssVariables(): string
+    {
+        $primary = $this->safeHex($this->primaryColor(), self::DEFAULTS['primary_color']);
+        $accent = $this->safeHex($this->accentColor(), self::DEFAULTS['accent_color']);
+        $primaryScale = $this->scale($primary);
+        $accentScale = $this->scale($accent);
+
+        $lines = [
+            '--color-primary: '.$primary.';',
+            '--color-primary-dark: '.$primaryScale[800].';',
+            '--color-primary-light: '.$primaryScale[400].';',
+            '--color-accent: '.$accent.';',
+            '--color-accent-dark: '.$accentScale[800].';',
+        ];
+
+        foreach ($primaryScale as $step => $value) {
+            $lines[] = "--color-emerald-{$step}: {$value};";
+            $lines[] = "--color-teal-{$step}: {$value};";
+        }
+
+        foreach ($accentScale as $step => $value) {
+            $lines[] = "--color-amber-{$step}: {$value};";
+        }
+
+        return ":root {\n            ".implode("\n            ", $lines)."\n        }";
+    }
+
     public static function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);
@@ -108,6 +135,28 @@ class BrandingService
         });
 
         return $this->settings;
+    }
+
+    private function safeHex(string $color, string $fallback): string
+    {
+        return preg_match('/^#[0-9A-Fa-f]{6}$/', $color) ? $color : $fallback;
+    }
+
+    private function scale(string $hex): array
+    {
+        return [
+            50 => "color-mix(in srgb, {$hex} 8%, white)",
+            100 => "color-mix(in srgb, {$hex} 14%, white)",
+            200 => "color-mix(in srgb, {$hex} 26%, white)",
+            300 => "color-mix(in srgb, {$hex} 42%, white)",
+            400 => "color-mix(in srgb, {$hex} 62%, white)",
+            500 => "color-mix(in srgb, {$hex} 80%, white)",
+            600 => "color-mix(in srgb, {$hex} 92%, white)",
+            700 => $hex,
+            800 => "color-mix(in srgb, {$hex} 78%, black)",
+            900 => "color-mix(in srgb, {$hex} 62%, black)",
+            950 => "color-mix(in srgb, {$hex} 42%, black)",
+        ];
     }
 
     private function assetUrl(?string $path, string $fallback): string

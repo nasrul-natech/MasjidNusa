@@ -58,6 +58,11 @@ class GoogleAuthController extends Controller
                     ->with('error', 'Akun Anda tidak aktif. Hubungi administrator.');
             }
 
+            if ($existingUser->google_id && (string) $existingUser->google_id !== (string) $googleUser->getId()) {
+                return redirect()->route('login')
+                    ->with('error', 'Akun ini sudah tertaut ke identitas Google lain.');
+            }
+
             $updates = [];
             if (!$existingUser->google_id) {
                 $updates['google_id'] = $googleUser->getId();
@@ -97,10 +102,7 @@ class GoogleAuthController extends Controller
 
         AuditLog::record('user.login_google', $user);
 
-        $redirect = $request->session()->pull('google.redirect', '/');
-        if (!str_starts_with($redirect, '/')) {
-            $redirect = '/';
-        }
+        $redirect = $this->safeInternalPath($request->session()->pull('google.redirect', '/'));
 
         $message = $isNewUser
             ? 'Akun berhasil dibuat. Selamat datang, ' . $user->name . '!'
@@ -128,5 +130,16 @@ class GoogleAuthController extends Controller
         } catch (\Exception) {
             return null;
         }
+    }
+
+    private function safeInternalPath(?string $redirect): string
+    {
+        $redirect = $redirect ?: '/';
+
+        if (!str_starts_with($redirect, '/') || str_starts_with($redirect, '//') || str_contains($redirect, '\\') || str_contains($redirect, ':')) {
+            return '/';
+        }
+
+        return $redirect;
     }
 }

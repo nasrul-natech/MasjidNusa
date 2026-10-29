@@ -176,6 +176,26 @@
         document.getElementById('sys-modal-overlay').style.display = 'flex';
     }
     function hideSysModal() { document.getElementById('sys-modal-overlay').style.display = 'none'; }
+    document.addEventListener('submit', function (event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        const message = (event.submitter && event.submitter.getAttribute('data-confirm')) || form.getAttribute('data-confirm');
+        if (!message || form.dataset.confirmBypass === '1') return;
+        event.preventDefault();
+        const isDelete = /hapus/i.test(message);
+        showSysModal({
+            title: form.dataset.confirmTitle || (isDelete ? 'Hapus data' : 'Konfirmasi'),
+            body: message,
+            icon: isDelete ? '🗑' : '?',
+            type: form.dataset.confirmType || (isDelete ? 'error' : 'warning'),
+            confirmText: form.dataset.confirmOk || (isDelete ? 'Hapus' : 'Ya'),
+            cancelText: 'Batal',
+            onConfirm: function () {
+                form.dataset.confirmBypass = '1';
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            },
+        });
+    }, true);
     </script>
 
     <style>

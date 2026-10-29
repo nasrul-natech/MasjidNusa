@@ -50,9 +50,11 @@ class UserAdzanSetting extends Model
 
     public static function getOrCreateForUser(int $userId): self
     {
-        return static::firstOrCreate(
+        $settings = static::firstOrCreate(
             ['user_id' => $userId],
             ['location_id' => PrayerLocation::getDefault()?->id]
         );
+
+        return $settings->wasRecentlyCreated ? $settings->refresh() : $settings;
     }
 }

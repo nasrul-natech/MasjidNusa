@@ -68,6 +68,9 @@ class TwoFactorController extends Controller
     public function showSetup(Request $request)
     {
         $user = $this->resolvePendingUser($request);
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
         if ($user->hasTwoFactorEnabled()) {
             return redirect()->route('two-factor.challenge');
@@ -94,6 +97,10 @@ class TwoFactorController extends Controller
         ]);
 
         $user = $this->resolvePendingUser($request);
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
         $secret = $request->session()->get('two_factor.setup_secret');
 
         if (!$secret) {
@@ -116,21 +123,27 @@ class TwoFactorController extends Controller
         return $this->completeLogin($request, $user);
     }
 
-    protected function resolvePendingUser(Request $request): User
+    protected function resolvePendingUser(Request $request): ?User
     {
         $userId = $request->session()->get('login.id');
 
         if (!$userId) {
-            return redirect()->route('login');
+            return null;
         }
 
-        return User::findOrFail($userId);
+        return User::find($userId);
     }
 
     protected function completeLogin(Request $request, User $user)
     {
+        if (!$user->is_active) {
+            $request->session()->forget(['login.id', 'login.remember', 'login.redirect', 'two_factor.setup_secret']);
+
+            return redirect()->route('login')->with('error', 'Akun Anda tidak aktif. Hubungi administrator.');
+        }
+
         $remember = $request->session()->get('login.remember', false);
-        $redirect = $request->session()->get('login.redirect', '/');
+        $redirect = $this->safeInternalPath($request->session()->get('login.redirect', '/'));
 
         Auth::login($user, $remember);
         $request->session()->regenerate();
@@ -150,5 +163,16 @@ class TwoFactorController extends Controller
         }
 
         return redirect($redirect)->with('success', 'Selamat datang, ' . $user->name . '!');
+    }
+
+    private function safeInternalPath(?string $redirect): string
+    {
+        $redirect = $redirect ?: '/';
+
+        if (!str_starts_with($redirect, '/') || str_starts_with($redirect, '//') || str_contains($redirect, '\\') || str_contains($redirect, ':')) {
+            return '/';
+        }
+
+        return $redirect;
     }
 }

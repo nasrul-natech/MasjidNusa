@@ -31,7 +31,7 @@
     </div>
 
     <div class="prose prose-sm max-w-none text-gray-800 leading-relaxed">
-        {!! $article->content !!}
+        {!! \App\Support\HtmlSanitizer::clean($article->content) !!}
     </div>
 
     @if($related->count())

@@ -166,13 +166,33 @@
         @apply flex items-center gap-1 flex-nowrap;
     }
 
+    .action-group form {
+        @apply inline-flex m-0;
+    }
+
     /* Table */
     .admin-table {
         @apply w-full text-sm;
     }
 
     .admin-table-wrapper {
-        @apply overflow-x-auto -mx-0;
+        @apply overflow-x-auto -mx-0 overscroll-x-contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    @media (max-width: 767px) {
+        .admin-table-wrapper {
+            @apply mx-0;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            @apply px-2.5 py-2 whitespace-nowrap;
+        }
+    }
+
+    .admin-table-wrapper .admin-table {
+        min-width: 36rem;
     }
 
     .admin-table thead tr {
@@ -212,7 +232,23 @@
     }
 
     .admin-table-toolbar .form-input {
-        @apply py-2 text-sm;
+        @apply py-2 text-sm w-full;
+    }
+
+    .admin-filter-grid {
+        @apply grid grid-cols-2 gap-3 w-full md:flex md:flex-wrap md:items-end;
+    }
+
+    .admin-filter-grid > .filter-field {
+        @apply min-w-0;
+    }
+
+    .admin-filter-grid > .filter-field-wide {
+        @apply col-span-2 min-w-0 md:col-span-1 md:flex-1 md:min-w-[12rem];
+    }
+
+    .admin-filter-actions {
+        @apply col-span-2 flex gap-2 md:col-span-1 md:ml-auto md:flex-none;
     }
 
     /* Mobile card-style table rows */
@@ -239,7 +275,11 @@
         }
 
         .admin-table-mobile-cards td:last-child {
-            @apply border-b-0 bg-gray-50/80;
+            @apply border-b-0 bg-gray-50/80 text-left;
+        }
+
+        .admin-table-mobile-cards td:last-child .action-group {
+            @apply justify-end flex-wrap;
         }
     }
 

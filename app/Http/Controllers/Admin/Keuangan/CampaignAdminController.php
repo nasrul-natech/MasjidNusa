@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Keuangan;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Donation;
 use App\Models\DonationCampaign;
 use App\Models\DonationCategory;
@@ -184,7 +185,15 @@ class CampaignAdminController extends Controller
             'reason' => ['required', 'string', 'max:255'],
         ]);
 
+        $before = $campaign->collected_amount;
         $campaign->update(['collected_amount' => $data['collected_amount']]);
+
+        AuditLog::record('campaign.amount_adjusted', $campaign, [
+            'collected_amount' => $before,
+        ], [
+            'collected_amount' => (int) $data['collected_amount'],
+            'reason' => $data['reason'],
+        ]);
 
         return back()->with('success', 'Jumlah terkumpul berhasil disesuaikan.');
     }
@@ -197,6 +206,13 @@ class CampaignAdminController extends Controller
 
         $before = $campaign->collected_amount;
         $campaign->update(['collected_amount' => $actualSum]);
+
+        AuditLog::record('campaign.amount_synced', $campaign, [
+            'collected_amount' => $before,
+        ], [
+            'collected_amount' => (int) $actualSum,
+            'reason' => 'Sinkron dari total donasi terverifikasi',
+        ]);
 
         $diff = $actualSum - $before;
         $msg = $diff === 0

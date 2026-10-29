@@ -58,7 +58,7 @@
         {{-- Description --}}
         @if($activity->content)
         <div class="prose prose-sm max-w-none text-gray-700 mb-6">
-            {!! $activity->content !!}
+            {!! \App\Support\HtmlSanitizer::clean($activity->content) !!}
         </div>
         @elseif($activity->description)
         <p class="text-gray-700 text-sm leading-relaxed mb-6">{{ $activity->description }}</p>

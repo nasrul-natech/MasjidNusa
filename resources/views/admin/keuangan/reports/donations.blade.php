@@ -30,8 +30,7 @@
     </div>
 </div>
 
-<div class="card overflow-hidden">
-    <table class="admin-table">
+<x-admin.table>
         <thead>
             <tr>
                 <th>Kode</th>
@@ -49,19 +48,18 @@
                 $statusLabels = ['pending'=>'Menunggu','waiting_verification'=>'Verifikasi','verified'=>'Terverifikasi','paid'=>'Lunas','rejected'=>'Ditolak','expired'=>'Kadaluwarsa'];
             @endphp
             <tr>
-                <td class="font-mono text-xs">{{ $donation->donation_code }}</td>
-                <td>{{ $donation->donor_name }}</td>
-                <td class="text-sm">{{ $donation->campaign?->title ?? 'Umum' }}</td>
-                <td class="font-semibold text-emerald-700">Rp {{ number_format($donation->amount, 0, ',', '.') }}</td>
-                <td><x-badge type="{{ $statusColors[$donation->status] ?? 'gray' }}">{{ $statusLabels[$donation->status] ?? $donation->status }}</x-badge></td>
-                <td class="text-xs text-gray-500">{{ $donation->created_at->format('d/m/Y') }}</td>
+                <td data-label="Kode" class="font-mono text-xs">{{ $donation->donation_code }}</td>
+                <td data-label="Donatur">{{ $donation->donor_name }}</td>
+                <td data-label="Kampanye" class="text-sm">{{ $donation->campaign?->title ?? 'Umum' }}</td>
+                <td data-label="Jumlah" class="font-semibold text-emerald-700">Rp {{ number_format($donation->amount, 0, ',', '.') }}</td>
+                <td data-label="Status"><x-badge type="{{ $statusColors[$donation->status] ?? 'gray' }}">{{ $statusLabels[$donation->status] ?? $donation->status }}</x-badge></td>
+                <td data-label="Tanggal" class="text-xs text-gray-500">{{ $donation->created_at->format('d/m/Y') }}</td>
             </tr>
             @empty
             <tr><td colspan="6" class="text-center py-8 text-gray-500">Tidak ada data donasi untuk periode ini</td></tr>
             @endforelse
         </tbody>
-    </table>
-</div>
+</x-admin.table>
 
 <div class="mt-4">{{ $donations->withQueryString()->links() }}</div>
 @endsection

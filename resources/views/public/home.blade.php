@@ -239,7 +239,7 @@ function heroSlider(total, mode) {
                 @if($prayers5)
                     @foreach($prayers5 as $i => $p)
                     @php $isNext = $i === $nextPrayerIndex; @endphp
-                    <div class="text-center rounded-xl py-2.5 lg:py-3.5 px-1 transition-all {{ $isNext ? 'bg-gradient-to-br from-[#d39929] to-[#b8821f] shadow-lg shadow-[#d39929]/45' : 'bg-emerald-600/50 lg:hover:bg-emerald-600/70' }}">
+                    <div class="text-center rounded-xl py-2.5 lg:py-3.5 px-1 transition-all {{ $isNext ? 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg' : 'bg-emerald-600/50 lg:hover:bg-emerald-600/70' }}">
                         <p class="text-[10px] lg:text-xs font-medium {{ $isNext ? 'text-white/90' : 'text-emerald-300' }}">{{ $p['name'] }}</p>
                         <p class="text-sm lg:text-lg font-bold">{{ $p['time'] }}</p>
                     </div>
@@ -247,7 +247,7 @@ function heroSlider(total, mode) {
                 @else
                     @foreach($prayerSchedules->take(5) as $i => $prayer)
                     @php $isNext = $i === $nextPrayerIndex; @endphp
-                    <div class="text-center rounded-xl py-2 px-1 lg:py-3.5 transition-all {{ $isNext ? 'bg-gradient-to-br from-[#d39929] to-[#b8821f] shadow-lg shadow-[#d39929]/45' : 'bg-emerald-600/50' }}">
+                    <div class="text-center rounded-xl py-2 px-1 lg:py-3.5 transition-all {{ $isNext ? 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg' : 'bg-emerald-600/50' }}">
                         <p class="text-[10px] lg:text-xs font-medium {{ $isNext ? 'text-white/90' : 'text-emerald-300' }}">{{ $prayer->prayer_name }}</p>
                         <p class="text-sm lg:text-lg font-bold">{{ \Carbon\Carbon::parse($prayer->time)->format('H:i') }}</p>
                     </div>
@@ -351,7 +351,7 @@ function heroSlider(total, mode) {
         grid.innerHTML = schedule.map((p, i) => {
             const isNext = i === nextIdx;
             return `
-            <div class="text-center rounded-xl py-2 px-1 lg:py-3.5 transition-all ${isNext ? 'bg-gradient-to-br from-[#d39929] to-[#b8821f] shadow-lg shadow-[#d39929]/45' : 'bg-emerald-600/50'}">
+            <div class="text-center rounded-xl py-2 px-1 lg:py-3.5 transition-all ${isNext ? 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg' : 'bg-emerald-600/50'}">
                 <p class="text-[10px] lg:text-xs font-medium ${isNext ? 'text-white/90' : 'text-emerald-300'}">${p.name}</p>
                 <p class="text-sm lg:text-lg font-bold">${p.time}</p>
             </div>`;

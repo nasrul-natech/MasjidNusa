@@ -4,6 +4,11 @@
 @section('page-title', 'Branding & Identitas Masjid')
 
 @section('content')
+@php
+    $primaryValue = old('primary_color', $settings['primary_color'] ?? $brand->primaryColor());
+    $accentValue = old('accent_color', $settings['accent_color'] ?? $brand->accentColor());
+@endphp
+<div x-data="{ primary: @js($primaryValue), accent: @js($accentValue) }">
 <x-admin.form-layout>
     <x-slot>
         <form action="{{ route('super-admin.branding.update') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
@@ -39,17 +44,19 @@
                     <div>
                         <label class="form-label">Warna Utama (Primary)</label>
                         <div class="flex gap-2 items-center">
-                            <input type="color" name="primary_color" value="{{ old('primary_color', $settings['primary_color'] ?? $brand->primaryColor()) }}" class="h-10 w-16 rounded-lg border border-gray-200 cursor-pointer">
-                            <input type="text" value="{{ old('primary_color', $settings['primary_color'] ?? $brand->primaryColor()) }}" class="form-input flex-1 font-mono text-sm" readonly>
+                            <input type="color" name="primary_color" x-model="primary" class="h-10 w-16 rounded-lg border border-gray-200 cursor-pointer">
+                            <input type="text" :value="primary" class="form-input flex-1 font-mono text-sm" readonly>
                         </div>
+                        <p class="text-xs text-gray-400 mt-1">Tombol, menu, header, dan halaman publik.</p>
                         @error('primary_color')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="form-label">Warna Aksen</label>
                         <div class="flex gap-2 items-center">
-                            <input type="color" name="accent_color" value="{{ old('accent_color', $settings['accent_color'] ?? $brand->accentColor()) }}" class="h-10 w-16 rounded-lg border border-gray-200 cursor-pointer">
-                            <input type="text" value="{{ old('accent_color', $settings['accent_color'] ?? $brand->accentColor()) }}" class="form-input flex-1 font-mono text-sm" readonly>
+                            <input type="color" name="accent_color" x-model="accent" class="h-10 w-16 rounded-lg border border-gray-200 cursor-pointer">
+                            <input type="text" :value="accent" class="form-input flex-1 font-mono text-sm" readonly>
                         </div>
+                        <p class="text-xs text-gray-400 mt-1">Sorotan jadwal sholat, favorit, dan elemen aksen.</p>
                         @error('accent_color')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
                 </div>
@@ -90,9 +97,13 @@
             <h3 class="font-bold text-gray-900 text-sm mb-2">Preview Brand</h3>
             <div class="p-4 bg-white rounded-xl border border-gray-100 text-center">
                 <img src="{{ $brand->logoIconUrl() }}" class="h-12 mx-auto mb-2" alt="Logo">
-                <p class="font-bold text-emerald-800">{{ old('app_name', $settings['app_name'] ?? $brand->appName()) }}</p>
+                <p class="font-bold" :style="`color:${primary}`">{{ old('app_name', $settings['app_name'] ?? $brand->appName()) }}</p>
                 <p class="text-xs text-gray-500 mt-1">{{ old('app_tagline', $settings['app_tagline'] ?? $brand->tagline()) }}</p>
                 <p class="text-xs text-gray-400 mt-2">{{ old('mosque_name', $settings['mosque_name'] ?? $brand->mosqueName()) }}</p>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <div class="h-8 rounded-lg" :style="`background:${primary}`"></div>
+                    <div class="h-8 rounded-lg" :style="`background:${accent}`"></div>
+                </div>
             </div>
         </div>
         <div class="card p-5">
@@ -113,4 +124,5 @@
         </div>
     </x-slot:aside>
 </x-admin.form-layout>
+</div>
 @endsection

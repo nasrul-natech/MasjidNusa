@@ -49,7 +49,7 @@
         {{-- Description --}}
         @if($campaign->content)
         <div class="prose prose-sm max-w-none text-gray-700 mb-6">
-            {!! $campaign->content !!}
+            {!! \App\Support\HtmlSanitizer::clean($campaign->content) !!}
         </div>
         @elseif($campaign->description)
         <p class="text-gray-700 text-sm leading-relaxed mb-6">{{ $campaign->description }}</p>

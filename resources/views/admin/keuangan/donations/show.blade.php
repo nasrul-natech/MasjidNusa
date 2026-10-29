@@ -88,7 +88,7 @@
                         </form>
                         <form action="{{ route('admin.keuangan.verify-payment.reject', $donation->id) }}" method="POST">
                             @csrf
-                            <button type="submit" class="btn-danger text-xs px-4 py-1.5" onclick="return confirm('Tolak pembayaran ini?')">Tolak</button>
+                            <button type="submit" class="btn-danger text-xs px-4 py-1.5" data-confirm="Tolak pembayaran ini?">Tolak</button>
                         </form>
                     </div>
                     @else

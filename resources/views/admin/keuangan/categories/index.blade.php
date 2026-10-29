@@ -51,7 +51,7 @@
                 <div class="action-group shrink-0">
                     <button @click="editing = true" class="btn-action-blue">Edit</button>
                     @if($category->campaigns_count === 0)
-                    <form action="{{ route('admin.keuangan.donation-categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Hapus kategori ini?')">
+                    <form action="{{ route('admin.keuangan.donation-categories.destroy', $category->id) }}" method="POST" data-confirm="Hapus kategori ini?">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn-action-red">Hapus</button>
                     </form>

@@ -3,7 +3,7 @@
  * Handles caching, push notifications, and offline support
  */
 
-const CACHE_VERSION = 'masjidnusa-v3';
+const CACHE_VERSION = 'masjidnusa-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -43,12 +43,17 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Skip non-GET, cross-origin, and API requests
+    const privatePage = ['/user', '/admin', '/super-admin', '/login', '/two-factor', '/bukti-transfer']
+        .some((prefix) => url.pathname === prefix || url.pathname.startsWith(prefix + '/'));
+
+    // Skip non-GET, cross-origin, API, and private pages (never cache account data)
     if (
         request.method !== 'GET' ||
         url.origin !== self.location.origin ||
         url.pathname.startsWith('/api/') ||
-        url.pathname.startsWith('/webhook/')
+        url.pathname.startsWith('/webhook/') ||
+        url.pathname.includes('/payment-proofs/') ||
+        privatePage
     ) {
         return;
     }

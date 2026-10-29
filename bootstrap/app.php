@@ -21,8 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'two-factor' => \App\Http\Middleware\EnsureTwoFactorVerified::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'webhook/duitku/callback',
+        ]);
+
         $middleware->web(append: [
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

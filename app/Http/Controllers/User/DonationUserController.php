@@ -7,9 +7,11 @@ use App\Models\Donation;
 use App\Models\DonationCampaign;
 use App\Models\DonationCategory;
 use App\Models\PaymentConfiguration;
+use App\Models\PaymentProof;
 use App\Models\PaymentTransaction;
 use App\Services\DuitkuService;
 use App\Services\NotificationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -32,45 +34,43 @@ class DonationUserController extends Controller
             'payment_method' => ['required', 'in:manual,duitku'],
         ]);
 
-        $user = auth()->user();
+        if ($response = $this->rejectDisabledMethod($data['payment_method'])) {
+            return $response;
+        }
 
+        $user = auth()->user();
         $campaign = null;
+
         if (!empty($data['category'])) {
             $cat = DonationCategory::where('slug', $data['category'])->first();
             if ($cat) {
                 $campaign = DonationCampaign::where('category_id', $cat->id)->active()->first();
             }
         }
+
         if (!$campaign) {
-            $campaign = DonationCampaign::active()->first();
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada program donasi aktif untuk kategori ini.',
+            ], 422);
         }
 
+        $isAnonymous = $data['is_anonymous'] ?? false;
         $donation = Donation::create([
             'donation_code' => 'DON-' . strtoupper(Str::random(8)),
             'user_id' => $user->id,
-            'campaign_id' => $campaign?->id,
+            'campaign_id' => $campaign->id,
             'amount' => $data['amount'],
-            'donor_name' => ($data['is_anonymous'] ?? false) ? 'Hamba Allah' : ($data['donor_name'] ?? $user->name),
+            'donor_name' => $isAnonymous ? 'Hamba Allah' : ($data['donor_name'] ?? $user->name),
             'donor_email' => $user->email,
             'donor_phone' => $user->phone ?? null,
-            'message' => $data['message'],
-            'is_anonymous' => $data['is_anonymous'] ?? false,
-            'status' => Donation::STATUS_WAITING_VERIFICATION,
+            'message' => $data['message'] ?? null,
+            'is_anonymous' => $isAnonymous,
+            'status' => Donation::STATUS_PENDING,
             'payment_method_type' => $data['payment_method'],
         ]);
 
-        $transaction = $donation->transactions()->create([
-            'amount' => $donation->amount,
-            'reference_number' => 'TXN-' . strtoupper(Str::random(10)),
-            'status' => 'pending',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'donation_id' => $donation->id,
-            'donation_code' => $donation->donation_code,
-            'transaction_id' => $transaction->id,
-        ]);
+        return $this->startPayment($donation, $user, $data['payment_method']);
     }
 
     public function store(Request $request, string $slug)
@@ -85,12 +85,8 @@ class DonationUserController extends Controller
         $campaign = DonationCampaign::where('slug', $slug)->active()->firstOrFail();
         $user = auth()->user();
 
-        // Validate payment method is enabled
-        if ($data['payment_method'] === 'manual' && !PaymentConfiguration::isManualEnabled()) {
-            return response()->json(['success' => false, 'message' => 'Transfer manual tidak aktif.'], 422);
-        }
-        if ($data['payment_method'] === 'duitku' && !PaymentConfiguration::isDuitkuEnabled()) {
-            return response()->json(['success' => false, 'message' => 'Duitku tidak aktif.'], 422);
+        if ($response = $this->rejectDisabledMethod($data['payment_method'])) {
+            return $response;
         }
 
         $donation = Donation::create([
@@ -98,7 +94,7 @@ class DonationUserController extends Controller
             'user_id' => $user->id,
             'campaign_id' => $campaign->id,
             'amount' => $data['amount'],
-            'donor_name' => $data['is_anonymous'] ? 'Hamba Allah' : $user->name,
+            'donor_name' => ($data['is_anonymous'] ?? false) ? 'Hamba Allah' : $user->name,
             'donor_email' => $user->email,
             'donor_phone' => $user->phone,
             'message' => $data['message'],
@@ -107,34 +103,7 @@ class DonationUserController extends Controller
             'payment_method_type' => $data['payment_method'],
         ]);
 
-        $paymentUrl = null;
-        $transaction = null;
-
-        if ($data['payment_method'] === 'duitku') {
-            $result = $this->duitkuService->createTransaction($donation, $user);
-            if ($result['success']) {
-                $paymentUrl = $result['payment_url'];
-                $donation->update(['status' => Donation::STATUS_PENDING]);
-            } else {
-                $donation->delete();
-                return response()->json(['success' => false, 'message' => $result['message']], 422);
-            }
-        } else {
-            $donation->update(['status' => Donation::STATUS_WAITING_VERIFICATION]);
-            $transaction = $donation->transactions()->create([
-                'amount' => $donation->amount,
-                'reference_number' => 'TXN-' . strtoupper(Str::random(10)),
-                'status' => 'pending',
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'donation_id' => $donation->id,
-            'donation_code' => $donation->donation_code,
-            'payment_url' => $paymentUrl,
-            'transaction_id' => $transaction->id ?? null,
-        ]);
+        return $this->startPayment($donation, $user, $data['payment_method']);
     }
 
     public function history()
@@ -154,17 +123,22 @@ class DonationUserController extends Controller
         ]);
 
         $transaction = PaymentTransaction::findOrFail($transactionId);
+        $donation = $transaction->donation;
 
-        // Ensure the donation belongs to the user
-        if ($transaction->donation->user_id !== auth()->id()) {
+        if ($donation->user_id !== auth()->id()) {
             abort(403);
         }
 
+        if (!in_array($donation->status, [Donation::STATUS_PENDING, Donation::STATUS_WAITING_VERIFICATION], true)) {
+            return back()->with('error', 'Bukti tidak bisa diunggah untuk donasi yang sudah selesai.');
+        }
+
         if ($transaction->proof?->image) {
+            Storage::disk('local')->delete($transaction->proof->image);
             Storage::disk('public')->delete($transaction->proof->image);
         }
 
-        $path = $request->file('proof')->store('payment-proofs', 'public');
+        $path = $request->file('proof')->store('payment-proofs', 'local');
 
         $transaction->proof()->updateOrCreate(
             ['transaction_id' => $transaction->id],
@@ -174,8 +148,84 @@ class DonationUserController extends Controller
             ]
         );
 
-        $transaction->donation->update(['status' => Donation::STATUS_WAITING_VERIFICATION]);
+        if ($donation->status === Donation::STATUS_PENDING) {
+            $donation->update(['status' => Donation::STATUS_WAITING_VERIFICATION]);
+        }
 
         return redirect()->route('user.donations.history')->with('success', 'Bukti transfer berhasil diupload. Menunggu verifikasi admin.');
+    }
+
+    public function showProof(PaymentProof $proof)
+    {
+        $donation = $proof->transaction?->donation;
+        $user = auth()->user();
+        $allowed = $donation && (
+            (int) $donation->user_id === (int) $user->id
+            || $user->hasAnyRole(['admin_keuangan', 'super_admin'])
+        );
+
+        if (!$allowed || !$proof->image) {
+            abort(403);
+        }
+
+        $path = $proof->image;
+
+        if (!Storage::disk('local')->exists($path) && Storage::disk('public')->exists($path)) {
+            Storage::disk('local')->put($path, Storage::disk('public')->get($path));
+            if (Storage::disk('local')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        if (!Storage::disk('local')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($path);
+    }
+
+    private function rejectDisabledMethod(string $method): ?JsonResponse
+    {
+        if ($method === 'manual' && !PaymentConfiguration::isManualEnabled()) {
+            return response()->json(['success' => false, 'message' => 'Transfer manual tidak aktif.'], 422);
+        }
+
+        if ($method === 'duitku' && !PaymentConfiguration::isDuitkuEnabled()) {
+            return response()->json(['success' => false, 'message' => 'Duitku tidak aktif.'], 422);
+        }
+
+        return null;
+    }
+
+    private function startPayment(Donation $donation, $user, string $method): JsonResponse
+    {
+        $paymentUrl = null;
+        $transaction = null;
+
+        if ($method === 'duitku') {
+            $result = $this->duitkuService->createTransaction($donation, $user);
+            if (!$result['success']) {
+                $donation->delete();
+
+                return response()->json(['success' => false, 'message' => $result['message']], 422);
+            }
+
+            $paymentUrl = $result['payment_url'];
+        } else {
+            $donation->update(['status' => Donation::STATUS_WAITING_VERIFICATION]);
+            $transaction = $donation->transactions()->create([
+                'amount' => $donation->amount,
+                'reference_number' => 'TXN-' . strtoupper(Str::random(10)),
+                'status' => 'pending',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'donation_id' => $donation->id,
+            'donation_code' => $donation->donation_code,
+            'payment_url' => $paymentUrl,
+            'transaction_id' => $transaction->id ?? null,
+        ]);
     }
 }

@@ -42,6 +42,20 @@ class BrandingServiceTest extends TestCase
         $this->assertSame('#1a365d', $brand->primaryColor());
     }
 
+    public function test_css_variables_follow_saved_brand_colors(): void
+    {
+        Setting::create(['key' => 'primary_color', 'value' => '#112233', 'group' => 'branding']);
+        Setting::create(['key' => 'accent_color', 'value' => '#b63fc6', 'group' => 'branding']);
+        BrandingService::clearCache();
+
+        $css = app(BrandingService::class)->cssVariables();
+
+        $this->assertStringContainsString('--color-primary: #112233;', $css);
+        $this->assertStringContainsString('--color-accent: #b63fc6;', $css);
+        $this->assertStringContainsString('--color-emerald-700: #112233;', $css);
+        $this->assertStringContainsString('--color-amber-700: #b63fc6;', $css);
+    }
+
     public function test_clear_cache_refreshes_branding_values(): void
     {
         Setting::create(['key' => 'app_name', 'value' => 'Awal', 'group' => 'branding']);

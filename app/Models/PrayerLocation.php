@@ -43,4 +43,34 @@ class PrayerLocation extends Model
         $date = $date ?? now()->toDateString();
         return $this->prayerTimes()->where('date', $date)->first();
     }
+
+    public function timezone(): string
+    {
+        $name = mb_strtolower(trim((string) $this->province_name));
+
+        if ($name === '') {
+            return (string) config('app.timezone', 'Asia/Jakarta');
+        }
+
+        $wit = [
+            'maluku', 'maluku utara', 'papua', 'papua barat', 'papua selatan',
+            'papua tengah', 'papua pegunungan', 'papua barat daya',
+        ];
+        $wita = [
+            'bali', 'nusa tenggara barat', 'nusa tenggara timur',
+            'kalimantan selatan', 'kalimantan timur', 'kalimantan utara',
+            'sulawesi utara', 'sulawesi tengah', 'sulawesi selatan',
+            'sulawesi tenggara', 'sulawesi barat', 'gorontalo',
+        ];
+
+        if (in_array($name, $wit, true) || str_contains($name, 'papua') || str_contains($name, 'maluku')) {
+            return 'Asia/Jayapura';
+        }
+
+        if (in_array($name, $wita, true) || str_contains($name, 'sulawesi') || str_contains($name, 'nusa tenggara') || $name === 'bali' || $name === 'gorontalo') {
+            return 'Asia/Makassar';
+        }
+
+        return 'Asia/Jakarta';
+    }
 }

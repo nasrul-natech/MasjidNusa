@@ -47,7 +47,7 @@
                     @csrf
                     <button type="submit" class="w-full btn-primary text-sm">✓ Verifikasi</button>
                 </form>
-                <form action="{{ route('admin.keuangan.verify-payment.reject', $donation->id) }}" method="POST" onsubmit="return confirm('Tolak pembayaran ini?')">
+                <form action="{{ route('admin.keuangan.verify-payment.reject', $donation->id) }}" method="POST" data-confirm="Tolak pembayaran ini?">
                     @csrf
                     <button type="submit" class="w-full btn-danger text-sm">✕ Tolak</button>
                 </form>

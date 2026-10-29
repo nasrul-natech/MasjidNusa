@@ -69,8 +69,10 @@ Route::get('/kegiatan', [ActivityController::class, 'index'])->name('kegiatan.in
 Route::get('/kegiatan/{slug}', [ActivityController::class, 'show'])->name('kegiatan.show');
 Route::get('/dakwah', [ArticleController::class, 'index'])->name('dakwah.index');
 Route::get('/dakwah/{slug}', [ArticleController::class, 'show'])->name('dakwah.show');
-Route::get('/donasi', [DonationController::class, 'index'])->name('donasi.index');
-Route::get('/donasi/{slug}', [DonationController::class, 'show'])->name('donasi.show');
+Route::middleware('module:donasi')->group(function () {
+    Route::get('/donasi', [DonationController::class, 'index'])->name('donasi.index');
+    Route::get('/donasi/{slug}', [DonationController::class, 'show'])->name('donasi.show');
+});
 Route::get('/info-masjid', [MosqueInfoController::class, 'index'])->name('info-masjid.index');
 Route::get('/info-masjid/sejarah', [MosqueInfoController::class, 'history'])->name('info-masjid.history');
 Route::get('/info-masjid/kepengurusan', [MosqueInfoController::class, 'management'])->name('info-masjid.management');
@@ -105,7 +107,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'showForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);
     Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
 
@@ -135,117 +137,177 @@ Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
     Route::post('/adzan-settings', [AdzanSettingController::class, 'update'])->name('adzan.settings.update');
     Route::post('/adzan-settings/sync-location', [AdzanSettingController::class, 'syncLocation'])->name('adzan.settings.sync-location');
 
-    Route::post('/donasi/submit', [DonationUserController::class, 'quickDonate'])->name('donations.quick');
-    Route::post('/donasi/{slug}', [DonationUserController::class, 'store'])->name('donations.store');
-    Route::get('/riwayat-donasi', [DonationUserController::class, 'history'])->name('donations.history');
-    Route::post('/upload-bukti/{transactionId}', [DonationUserController::class, 'uploadProof'])->name('donations.upload-proof');
+    Route::middleware('module:donasi')->group(function () {
+        Route::post('/donasi/submit', [DonationUserController::class, 'quickDonate'])->name('donations.quick');
+        Route::post('/donasi/{slug}', [DonationUserController::class, 'store'])->name('donations.store');
+        Route::get('/riwayat-donasi', [DonationUserController::class, 'history'])->name('donations.history');
+        Route::post('/upload-bukti/{transactionId}', [DonationUserController::class, 'uploadProof'])->name('donations.upload-proof');
+    });
 });
 
 // ===== ADMIN OPERASIONAL =====
 Route::middleware(['auth', 'two-factor', 'role:admin_operasional,super_admin'])->prefix('admin/operasional')->name('admin.operasional.')->group(function () {
-    Route::get('/dashboard', [OpsDashboard::class, 'index'])->name('dashboard');
+    Route::middleware('permission:access_admin_operasional')->group(function () {
+        Route::get('/dashboard', [OpsDashboard::class, 'index'])->name('dashboard');
+    });
 
-    Route::resource('mosque-profile', MosqueProfileController::class)->only(['index', 'edit', 'update']);
-    Route::resource('mosque-history', MosqueHistoryController::class);
-    Route::resource('management-history', ManagementHistoryController::class);
-    Route::resource('organization', OrganizationController::class);
-    Route::resource('prayer-schedule', PrayerScheduleAdminController::class);
+    Route::middleware('permission:manage_mosque_profile')->group(function () {
+        Route::resource('mosque-profile', MosqueProfileController::class)->only(['index', 'edit', 'update']);
+    });
+    Route::middleware('permission:manage_mosque_history')->group(function () {
+        Route::resource('mosque-history', MosqueHistoryController::class);
+    });
+    Route::middleware('permission:manage_management_history')->group(function () {
+        Route::resource('management-history', ManagementHistoryController::class);
+    });
+    Route::middleware('permission:manage_organization_structure')->group(function () {
+        Route::resource('organization', OrganizationController::class);
+    });
 
-    // Prayer Schedule: Locations
-    Route::get('/prayer-schedule-locations', [PrayerScheduleAdminController::class, 'locations'])->name('prayer-schedule.locations');
-    Route::post('/prayer-schedule-locations', [PrayerScheduleAdminController::class, 'storeLocation'])->name('prayer-schedule.locations.store');
-    Route::delete('/prayer-schedule-locations/{location}', [PrayerScheduleAdminController::class, 'destroyLocation'])->name('prayer-schedule.locations.destroy');
-    Route::post('/prayer-schedule-locations/{location}/default', [PrayerScheduleAdminController::class, 'setDefaultLocation'])->name('prayer-schedule.locations.default');
+    Route::middleware('permission:manage_prayer_schedule')->group(function () {
+        Route::resource('prayer-schedule', PrayerScheduleAdminController::class);
+        Route::get('/prayer-schedule-locations', [PrayerScheduleAdminController::class, 'locations'])->name('prayer-schedule.locations');
+        Route::post('/prayer-schedule-locations', [PrayerScheduleAdminController::class, 'storeLocation'])->name('prayer-schedule.locations.store');
+        Route::delete('/prayer-schedule-locations/{location}', [PrayerScheduleAdminController::class, 'destroyLocation'])->name('prayer-schedule.locations.destroy');
+        Route::post('/prayer-schedule-locations/{location}/default', [PrayerScheduleAdminController::class, 'setDefaultLocation'])->name('prayer-schedule.locations.default');
+        Route::get('/prayer-schedule-import', [PrayerScheduleAdminController::class, 'importForm'])->name('prayer-schedule.import-form');
+        Route::post('/prayer-schedule-import', [PrayerScheduleAdminController::class, 'import'])->name('prayer-schedule.import');
+        Route::post('/prayer-schedule-fetch-api', [PrayerScheduleAdminController::class, 'fetchFromApi'])->name('prayer-schedule.fetch-api');
+        Route::delete('/prayer-schedule-destroy-month', [PrayerScheduleAdminController::class, 'destroyMonth'])->name('prayer-schedule.destroy-month');
+        Route::get('/prayer-schedule-api/provinces', [PrayerScheduleAdminController::class, 'apiProvinces'])->name('prayer-schedule.api.provinces');
+        Route::get('/prayer-schedule-api/cities', [PrayerScheduleAdminController::class, 'apiCities'])->name('prayer-schedule.api.cities');
+    });
 
-    // Prayer Schedule: Import & API Fetch
-    Route::get('/prayer-schedule-import', [PrayerScheduleAdminController::class, 'importForm'])->name('prayer-schedule.import-form');
-    Route::post('/prayer-schedule-import', [PrayerScheduleAdminController::class, 'import'])->name('prayer-schedule.import');
-    Route::post('/prayer-schedule-fetch-api', [PrayerScheduleAdminController::class, 'fetchFromApi'])->name('prayer-schedule.fetch-api');
-    Route::delete('/prayer-schedule-destroy-month', [PrayerScheduleAdminController::class, 'destroyMonth'])->name('prayer-schedule.destroy-month');
-
-    // Prayer Schedule: AJAX API proxy (province/city dropdowns)
-    Route::get('/prayer-schedule-api/provinces', [PrayerScheduleAdminController::class, 'apiProvinces'])->name('prayer-schedule.api.provinces');
-    Route::get('/prayer-schedule-api/cities', [PrayerScheduleAdminController::class, 'apiCities'])->name('prayer-schedule.api.cities');
-
-    // Doa (Kumpulan Doa)
-    Route::resource('doa', DoaAdminController::class);
-    Route::resource('doa-category', DoaCategoryAdminController::class)->except(['show']);
+    Route::middleware('permission:manage_general_info')->group(function () {
+        Route::resource('doa', DoaAdminController::class);
+        Route::resource('doa-category', DoaCategoryAdminController::class)->except(['show']);
+    });
 });
 
 // ===== ADMIN KEUANGAN =====
-Route::middleware(['auth', 'two-factor', 'role:admin_keuangan,super_admin'])->prefix('admin/keuangan')->name('admin.keuangan.')->group(function () {
-    Route::get('/dashboard', [KeuDashboard::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'two-factor', 'role:admin_keuangan,super_admin', 'module:donasi'])->prefix('admin/keuangan')->name('admin.keuangan.')->group(function () {
+    Route::middleware('permission:access_admin_keuangan')->group(function () {
+        Route::get('/dashboard', [KeuDashboard::class, 'index'])->name('dashboard');
+    });
 
-    Route::resource('campaigns', CampaignAdminController::class);
-    Route::post('/campaigns/{campaign}/toggle-featured', [CampaignAdminController::class, 'toggleFeatured'])->name('campaigns.toggle-featured');
-    Route::post('/campaigns/{campaign}/adjust-amount', [CampaignAdminController::class, 'adjustAmount'])->name('campaigns.adjust-amount');
-    Route::post('/campaigns/{campaign}/sync-amount', [CampaignAdminController::class, 'syncAmount'])->name('campaigns.sync-amount');
-    Route::resource('donation-categories', DonationCategoryController::class)->except(['show', 'create', 'edit']);
+    Route::middleware('permission:manage_donations')->group(function () {
+        Route::resource('campaigns', CampaignAdminController::class);
+        Route::post('/campaigns/{campaign}/toggle-featured', [CampaignAdminController::class, 'toggleFeatured'])->name('campaigns.toggle-featured');
+        Route::post('/campaigns/{campaign}/adjust-amount', [CampaignAdminController::class, 'adjustAmount'])->name('campaigns.adjust-amount');
+        Route::post('/campaigns/{campaign}/sync-amount', [CampaignAdminController::class, 'syncAmount'])->name('campaigns.sync-amount');
+        Route::resource('donation-categories', DonationCategoryController::class)->except(['show', 'create', 'edit']);
+        Route::resource('donations', DonationAdminController::class)->only(['index', 'show']);
+    });
 
-    Route::resource('donations', DonationAdminController::class)->only(['index', 'show']);
-    Route::get('/verify-payment', [PaymentVerificationController::class, 'index'])->name('verify-payment.index');
-    Route::post('/verify-payment/{id}/approve', [PaymentVerificationController::class, 'approve'])->name('verify-payment.approve');
-    Route::post('/verify-payment/{id}/reject', [PaymentVerificationController::class, 'reject'])->name('verify-payment.reject');
-    Route::resource('bank-accounts', BankAccountController::class);
-    Route::get('/payment-config', [PaymentConfigController::class, 'index'])->name('payment-config.index');
-    Route::post('/payment-config', [PaymentConfigController::class, 'update'])->name('payment-config.update');
-    Route::get('/duitku', [DuitkuAdminController::class, 'index'])->name('duitku.index');
-    Route::post('/duitku', [DuitkuAdminController::class, 'update'])->name('duitku.update');
-    Route::get('/reports/donations', [ReportController::class, 'donations'])->name('reports.donations');
-    Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
-    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::middleware('permission:verify_payments')->group(function () {
+        Route::get('/verify-payment', [PaymentVerificationController::class, 'index'])->name('verify-payment.index');
+        Route::post('/verify-payment/{id}/approve', [PaymentVerificationController::class, 'approve'])->name('verify-payment.approve');
+        Route::post('/verify-payment/{id}/reject', [PaymentVerificationController::class, 'reject'])->name('verify-payment.reject');
+    });
+
+    Route::middleware('permission:manage_bank_accounts')->group(function () {
+        Route::resource('bank-accounts', BankAccountController::class);
+    });
+    Route::middleware('permission:manage_payment_config')->group(function () {
+        Route::get('/payment-config', [PaymentConfigController::class, 'index'])->name('payment-config.index');
+        Route::post('/payment-config', [PaymentConfigController::class, 'update'])->name('payment-config.update');
+    });
+    Route::middleware('permission:manage_duitku')->group(function () {
+        Route::get('/duitku', [DuitkuAdminController::class, 'index'])->name('duitku.index');
+        Route::post('/duitku', [DuitkuAdminController::class, 'update'])->name('duitku.update');
+    });
+    Route::middleware('permission:view_donation_reports')->group(function () {
+        Route::get('/reports/donations', [ReportController::class, 'donations'])->name('reports.donations');
+        Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
+    });
+    Route::middleware('permission:export_reports')->group(function () {
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    });
 });
 
 // ===== ADMIN MEDIA IT =====
 Route::middleware(['auth', 'two-factor', 'role:admin_media_it,super_admin'])->prefix('admin/media-it')->name('admin.media-it.')->group(function () {
-    Route::get('/dashboard', [MediaDashboard::class, 'index'])->name('dashboard');
+    Route::middleware('permission:access_admin_media_it')->group(function () {
+        Route::get('/dashboard', [MediaDashboard::class, 'index'])->name('dashboard');
+    });
 
-    Route::resource('activities', ActivityAdminController::class);
-    Route::post('/activities/{id}/publish', [ActivityAdminController::class, 'publish'])->name('activities.publish');
-    Route::resource('articles', ArticleAdminController::class);
-    Route::post('/articles/{id}/publish', [ArticleAdminController::class, 'publish'])->name('articles.publish');
-    Route::resource('banners', BannerController::class);
-    Route::resource('popup-ads', PopupAdController::class);
-    Route::post('/popup-ads/{popupAd}/toggle', [PopupAdController::class, 'toggleActive'])->name('popup-ads.toggle');
-    Route::get('/notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/send', [NotificationAdminController::class, 'send'])->name('notifications.send');
+    Route::middleware('permission:manage_activities')->group(function () {
+        Route::resource('activities', ActivityAdminController::class);
+        Route::post('/activities/{id}/publish', [ActivityAdminController::class, 'publish'])->name('activities.publish');
+    });
+    Route::middleware('permission:manage_articles')->group(function () {
+        Route::resource('articles', ArticleAdminController::class);
+        Route::post('/articles/{id}/publish', [ArticleAdminController::class, 'publish'])->name('articles.publish');
+    });
+    Route::middleware('permission:manage_banners')->group(function () {
+        Route::resource('banners', BannerController::class);
+    });
+    Route::middleware(['permission:manage_popup_ads', 'module:popup_ads'])->group(function () {
+        Route::resource('popup-ads', PopupAdController::class);
+        Route::post('/popup-ads/{popupAd}/toggle', [PopupAdController::class, 'toggleActive'])->name('popup-ads.toggle');
+    });
+    Route::middleware('permission:manage_home_content')->group(function () {
+        Route::get('/notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/send', [NotificationAdminController::class, 'send'])->name('notifications.send');
+    });
 });
 
 // ===== SUPER ADMIN =====
 Route::middleware(['auth', 'two-factor', 'role:super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/dashboard', [SuperDashboard::class, 'index'])->name('dashboard');
 
-    Route::resource('users', UserController::class);
-    Route::post('/users/{id}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
-    Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::middleware('permission:manage_users')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::post('/users/{id}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+        Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('/users/bulk-action', [UserController::class, 'bulkAction'])->name('users.bulk-action');
+    });
 
-    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
-    Route::post('/roles/{id}/assign', [RoleController::class, 'assign'])->name('roles.assign');
+    Route::middleware('permission:manage_roles')->group(function () {
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles/{id}/assign', [RoleController::class, 'assign'])->name('roles.assign');
+    });
 
-    Route::get('/smtp', [SmtpController::class, 'index'])->name('smtp.index');
-    Route::post('/smtp', [SmtpController::class, 'update'])->name('smtp.update');
-    Route::post('/smtp/test', [SmtpController::class, 'test'])->name('smtp.test');
+    Route::middleware('permission:manage_smtp')->group(function () {
+        Route::get('/smtp', [SmtpController::class, 'index'])->name('smtp.index');
+        Route::post('/smtp', [SmtpController::class, 'update'])->name('smtp.update');
+        Route::post('/smtp/test', [SmtpController::class, 'test'])->name('smtp.test');
+    });
 
-    Route::resource('email-templates', EmailTemplateController::class);
+    Route::middleware('permission:manage_email_templates')->group(function () {
+        Route::resource('email-templates', EmailTemplateController::class);
+    });
 
-    Route::get('/payment-rules', [PaymentRulesController::class, 'index'])->name('payment-rules.index');
-    Route::post('/payment-rules', [PaymentRulesController::class, 'update'])->name('payment-rules.update');
+    Route::middleware('permission:manage_payment_rules')->group(function () {
+        Route::get('/payment-rules', [PaymentRulesController::class, 'index'])->name('payment-rules.index');
+        Route::post('/payment-rules', [PaymentRulesController::class, 'update'])->name('payment-rules.update');
+    });
 
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::middleware('permission:manage_settings')->group(function () {
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    });
 
-    Route::resource('modules', ModuleController::class)->only(['index', 'update']);
-    Route::post('/modules/{id}/toggle', [ModuleController::class, 'toggle'])->name('modules.toggle');
+    Route::middleware('permission:manage_modules')->group(function () {
+        Route::resource('modules', ModuleController::class)->only(['index', 'update']);
+        Route::post('/modules/{id}/toggle', [ModuleController::class, 'toggle'])->name('modules.toggle');
+    });
 
-    Route::get('/branding', [BrandingController::class, 'index'])->name('branding.index');
-    Route::post('/branding', [BrandingController::class, 'update'])->name('branding.update');
+    Route::middleware('permission:manage_branding')->group(function () {
+        Route::get('/branding', [BrandingController::class, 'index'])->name('branding.index');
+        Route::post('/branding', [BrandingController::class, 'update'])->name('branding.update');
+    });
 
-    Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
-    Route::post('/audit-log/purge', [AuditLogController::class, 'purgeLogs'])->name('audit-log.purge');
+    Route::middleware('permission:view_audit_log')->group(function () {
+        Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
+        Route::post('/audit-log/purge', [AuditLogController::class, 'purgeLogs'])->name('audit-log.purge');
+    });
 });
 
 // ===== PUSH SUBSCRIPTION API =====
-Route::middleware('auth')->prefix('api')->name('api.')->group(function () {
+Route::middleware('auth')->get('/bukti-transfer/{proof}', [DonationUserController::class, 'showProof'])->name('donations.proof');
+
+Route::middleware(['auth', 'module:push_notification'])->prefix('api')->name('api.')->group(function () {
     Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
     Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 });

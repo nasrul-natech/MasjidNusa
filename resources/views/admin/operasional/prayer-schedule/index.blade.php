@@ -74,7 +74,7 @@
             <p class="text-xs text-emerald-600 mt-0.5">{{ $hijriRange }}</p>
         </div>
         <form action="{{ route('admin.operasional.prayer-schedule.destroy-month') }}" method="POST"
-              onsubmit="return confirm('Hapus semua jadwal bulan ini untuk lokasi ini?')">
+              data-confirm="Hapus semua jadwal bulan ini untuk lokasi ini?">
             @csrf @method('DELETE')
             <input type="hidden" name="location_id" value="{{ $selectedLocationId }}">
             <input type="hidden" name="month" value="{{ $month }}">
@@ -166,6 +166,7 @@
         </div>
         <a href="{{ route('admin.operasional.prayer-schedule.create') }}" class="text-sm text-emerald-600 hover:underline">+ Tambah</a>
     </div>
+    <div class="admin-table-wrapper">
     <table class="admin-table">
         <thead>
             <tr>
@@ -179,17 +180,17 @@
         <tbody>
             @foreach($manualSchedules as $schedule)
             <tr>
-                <td class="font-semibold">{{ $schedule->prayer_name }}</td>
-                <td class="font-mono">{{ \Carbon\Carbon::parse($schedule->time)->format('H:i') }}</td>
-                <td><x-badge type="{{ $schedule->type === 'daily' ? 'success' : ($schedule->type === 'jumat' ? 'warning' : 'info') }}">{{ ucfirst($schedule->type) }}</x-badge></td>
-                <td><x-badge type="{{ $schedule->is_active ? 'success' : 'gray' }}">{{ $schedule->is_active ? 'Aktif' : 'Nonaktif' }}</x-badge></td>
-                <td>
-                    <div class="action-group">
+                <td data-label="Nama Sholat" class="font-semibold">{{ $schedule->prayer_name }}</td>
+                <td data-label="Waktu" class="font-mono">{{ \Carbon\Carbon::parse($schedule->time)->format('H:i') }}</td>
+                <td data-label="Tipe"><x-badge type="{{ $schedule->type === 'daily' ? 'success' : ($schedule->type === 'jumat' ? 'warning' : 'info') }}">{{ ucfirst($schedule->type) }}</x-badge></td>
+                <td data-label="Status"><x-badge type="{{ $schedule->is_active ? 'success' : 'gray' }}">{{ $schedule->is_active ? 'Aktif' : 'Nonaktif' }}</x-badge></td>
+                <td data-label="Aksi">
+                    <div class="action-group flex-wrap">
                         <a href="{{ route('admin.operasional.prayer-schedule.edit', $schedule->id) }}" class="btn-action-blue">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             Edit
                         </a>
-                        <form action="{{ route('admin.operasional.prayer-schedule.destroy', $schedule->id) }}" method="POST" onsubmit="return confirm('Hapus jadwal ini?')">
+                        <form action="{{ route('admin.operasional.prayer-schedule.destroy', $schedule->id) }}" method="POST" data-confirm="Hapus jadwal ini?">
                             @csrf @method('DELETE')
                             <button type="submit" class="btn-action-red">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -202,6 +203,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 </div>
 @endif
 @endsection

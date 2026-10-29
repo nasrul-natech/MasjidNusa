@@ -3,28 +3,59 @@
 @section('title', 'Lokasi Jadwal Sholat')
 @section('page-title', 'Kelola Lokasi')
 
+@push('styles')
+    @vite('resources/js/prayer-locations.js')
+    <style>
+        .ts-wrapper { width: 100%; }
+        .ts-wrapper .ts-control {
+            border-radius: 0.75rem;
+            border-color: #d1d5db;
+            min-height: 2.85rem;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.875rem;
+            box-shadow: none;
+        }
+        .ts-wrapper.focus .ts-control {
+            border-color: transparent;
+            box-shadow: 0 0 0 2px var(--color-primary, #064e3b);
+        }
+        .ts-dropdown {
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            z-index: 60;
+        }
+        .ts-dropdown .active {
+            background-color: #ecfdf5;
+            color: #064e3b;
+        }
+    </style>
+@endpush
+
 @section('content')
 <div class="max-w-2xl">
     {{-- Add Location Form --}}
     <div class="card p-5 mb-6">
         <h3 class="font-semibold text-gray-900 mb-1">Tambah Lokasi Baru</h3>
-        <p class="text-xs text-gray-500 mb-4">Pilih provinsi dan kota — koordinat otomatis terisi untuk perhitungan waktu sholat via Aladhan API (metode Kemenag RI)</p>
+        <p class="text-xs text-gray-500 mb-4">Ketik untuk mencari provinsi atau kabupaten/kota. Koordinat pusat wilayah terisi otomatis untuk jadwal Aladhan (metode Kemenag RI).</p>
 
-        <form action="{{ route('admin.operasional.prayer-schedule.locations.store') }}" method="POST" class="space-y-3">
+        <form id="prayer-location-form" action="{{ route('admin.operasional.prayer-schedule.locations.store') }}" method="POST" class="space-y-3"
+              data-provinces-url="{{ route('admin.operasional.prayer-schedule.api.provinces') }}"
+              data-cities-url="{{ route('admin.operasional.prayer-schedule.api.cities') }}">
             @csrf
 
             <div>
-                <label class="form-label text-xs">Provinsi <span class="text-red-500">*</span></label>
-                <select id="province-select" class="form-input text-sm" required>
-                    <option value="">-- Pilih Provinsi --</option>
+                <label class="form-label text-xs" for="province-select">Provinsi <span class="text-red-500">*</span></label>
+                <select id="province-select" class="form-input text-sm" placeholder="Cari provinsi" required>
+                    <option value="">Cari provinsi</option>
                 </select>
             </div>
 
             <div>
-                <label class="form-label text-xs">Kota <span class="text-red-500">*</span></label>
-                <select id="city-select" class="form-input text-sm" disabled required>
-                    <option value="">-- Pilih provinsi dulu --</option>
+                <label class="form-label text-xs" for="city-select">Kabupaten / Kota <span class="text-red-500">*</span></label>
+                <select id="city-select" class="form-input text-sm" placeholder="Pilih provinsi dulu" disabled required>
+                    <option value="">Pilih provinsi dulu</option>
                 </select>
+                <p id="location-status" class="text-xs text-gray-400 mt-1"></p>
             </div>
 
             <input type="hidden" name="province_name" id="province-hidden">
@@ -83,7 +114,7 @@
                     </button>
                 </form>
                 @endunless
-                <form action="{{ route('admin.operasional.prayer-schedule.locations.destroy', $location->id) }}" method="POST" onsubmit="return confirm('Hapus lokasi ini beserta semua jadwalnya?')">
+                <form action="{{ route('admin.operasional.prayer-schedule.locations.destroy', $location->id) }}" method="POST" data-confirm="Hapus lokasi ini beserta semua jadwalnya?">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn-action-red">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -102,88 +133,4 @@
     </div>
 </div>
 
-<script>
-(function () {
-    const citiesUrl = @json(route('admin.operasional.prayer-schedule.api.cities'));
-    const provincesUrl = @json(route('admin.operasional.prayer-schedule.api.provinces'));
-
-    const provinceSelect = document.getElementById('province-select');
-    const citySelect     = document.getElementById('city-select');
-    const provinceHidden = document.getElementById('province-hidden');
-    const cityHidden     = document.getElementById('city-hidden');
-    const latHidden      = document.getElementById('lat-hidden');
-    const lngHidden      = document.getElementById('lng-hidden');
-    const latDisplay     = document.getElementById('lat-display');
-    const lngDisplay     = document.getElementById('lng-display');
-    const submitBtn      = document.getElementById('submit-btn');
-
-    fetch(provincesUrl)
-        .then(r => r.json())
-        .then(json => {
-            (json.data || []).forEach(prov => {
-                const opt = document.createElement('option');
-                opt.value = prov;
-                opt.textContent = prov;
-                provinceSelect.appendChild(opt);
-            });
-        });
-
-    provinceSelect.addEventListener('change', function () {
-        const prov = this.value;
-        provinceHidden.value = prov;
-        cityHidden.value = '';
-        latHidden.value = '';
-        lngHidden.value = '';
-        latDisplay.value = '';
-        lngDisplay.value = '';
-        submitBtn.disabled = true;
-
-        if (!prov) {
-            citySelect.innerHTML = '<option value="">-- Pilih provinsi dulu --</option>';
-            citySelect.disabled = true;
-            return;
-        }
-
-        citySelect.innerHTML = '<option value="">Memuat...</option>';
-        citySelect.disabled = true;
-
-        fetch(citiesUrl + '?province=' + encodeURIComponent(prov))
-            .then(r => r.json())
-            .then(json => {
-                citySelect.innerHTML = '<option value="">-- Pilih Kota --</option>';
-                (json.data || []).forEach(city => {
-                    const opt = document.createElement('option');
-                    opt.value = JSON.stringify(city);
-                    opt.textContent = city.name;
-                    citySelect.appendChild(opt);
-                });
-                citySelect.disabled = false;
-            });
-    });
-
-    citySelect.addEventListener('change', function () {
-        if (!this.value) {
-            cityHidden.value = '';
-            latHidden.value = '';
-            lngHidden.value = '';
-            latDisplay.value = '';
-            lngDisplay.value = '';
-            submitBtn.disabled = true;
-            return;
-        }
-
-        try {
-            const city = JSON.parse(this.value);
-            cityHidden.value = city.name;
-            latHidden.value = city.lat;
-            lngHidden.value = city.lng;
-            latDisplay.value = city.lat;
-            lngDisplay.value = city.lng;
-            submitBtn.disabled = false;
-        } catch (e) {
-            submitBtn.disabled = true;
-        }
-    });
-})();
-</script>
 @endsection

@@ -80,7 +80,7 @@
         <div class="mt-5 pt-4 border-t border-gray-100">
             <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Penjelasan</h3>
             @if($doa->content_html)
-            <div class="prose prose-sm max-w-none text-gray-700">{!! $doa->content_html !!}</div>
+            <div class="prose prose-sm max-w-none text-gray-700">{!! \App\Support\HtmlSanitizer::clean($doa->content_html) !!}</div>
             @else
             <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $doa->content_text }}</p>
             @endif

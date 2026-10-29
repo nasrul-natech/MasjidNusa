@@ -14,8 +14,7 @@
     </form>
 </div>
 
-<div class="card overflow-hidden">
-    <table class="admin-table">
+<x-admin.table>
         <thead>
             <tr>
                 <th>Kode Transaksi</th>
@@ -29,19 +28,18 @@
         <tbody>
             @forelse($transactions as $tx)
             <tr>
-                <td class="font-mono text-xs">{{ $tx->transaction_code }}</td>
-                <td>{{ $tx->donation?->donor_name }}</td>
-                <td class="text-sm">{{ $tx->paymentMethod?->name ?? $tx->payment_method }}</td>
-                <td><x-badge type="{{ $tx->status === 'paid' ? 'success' : ($tx->status === 'failed' ? 'danger' : 'yellow') }}">{{ ucfirst($tx->status) }}</x-badge></td>
-                <td class="font-semibold">Rp {{ number_format($tx->donation?->amount ?? 0, 0, ',', '.') }}</td>
-                <td class="text-xs text-gray-500">{{ $tx->created_at->format('d/m/Y H:i') }}</td>
+                <td data-label="Kode Transaksi" class="font-mono text-xs">{{ $tx->transaction_code }}</td>
+                <td data-label="Donatur">{{ $tx->donation?->donor_name }}</td>
+                <td data-label="Metode" class="text-sm">{{ $tx->paymentMethod?->name ?? $tx->payment_method }}</td>
+                <td data-label="Status"><x-badge type="{{ $tx->status === 'paid' ? 'success' : ($tx->status === 'failed' ? 'danger' : 'yellow') }}">{{ ucfirst($tx->status) }}</x-badge></td>
+                <td data-label="Dibayar" class="font-semibold">Rp {{ number_format($tx->donation?->amount ?? 0, 0, ',', '.') }}</td>
+                <td data-label="Tanggal" class="text-xs text-gray-500">{{ $tx->created_at->format('d/m/Y H:i') }}</td>
             </tr>
             @empty
             <tr><td colspan="6" class="text-center py-8 text-gray-500">Tidak ada data transaksi untuk periode ini</td></tr>
             @endforelse
         </tbody>
-    </table>
-</div>
+</x-admin.table>
 
 <div class="mt-4">{{ $transactions->withQueryString()->links() }}</div>
 @endsection

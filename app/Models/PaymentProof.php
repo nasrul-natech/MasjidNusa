@@ -27,6 +27,6 @@ class PaymentProof extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return storage_url($this->image);
+        return $this->image ? route('donations.proof', $this) : null;
     }
 }

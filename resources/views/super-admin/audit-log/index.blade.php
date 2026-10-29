@@ -47,7 +47,7 @@
         <p class="text-xs text-gray-400 mb-4">Hapus log berdasarkan rentang waktu untuk menjaga performa database.</p>
         <div class="space-y-2">
             <form action="{{ route('super-admin.audit-log.purge') }}" method="POST"
-                  onsubmit="return confirm('Hapus semua log yang lebih dari 1 bulan? ({{ number_format($stats['month_1']) }} entri)')">
+                  data-confirm="Hapus semua log yang lebih dari 1 bulan? ({{ number_format($stats['month_1']) }} entri)">
                 @csrf
                 <input type="hidden" name="period" value="1_month">
                 <button type="submit" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm border border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors {{ $stats['month_1'] == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ $stats['month_1'] == 0 ? 'disabled' : '' }}>
@@ -56,7 +56,7 @@
                 </button>
             </form>
             <form action="{{ route('super-admin.audit-log.purge') }}" method="POST"
-                  onsubmit="return confirm('Hapus semua log yang lebih dari 6 bulan? ({{ number_format($stats['month_6']) }} entri)')">
+                  data-confirm="Hapus semua log yang lebih dari 6 bulan? ({{ number_format($stats['month_6']) }} entri)">
                 @csrf
                 <input type="hidden" name="period" value="6_months">
                 <button type="submit" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm border border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 transition-colors {{ $stats['month_6'] == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ $stats['month_6'] == 0 ? 'disabled' : '' }}>
@@ -65,7 +65,7 @@
                 </button>
             </form>
             <form action="{{ route('super-admin.audit-log.purge') }}" method="POST"
-                  onsubmit="return confirm('Hapus semua log yang lebih dari 1 tahun? ({{ number_format($stats['year_1']) }} entri)')">
+                  data-confirm="Hapus semua log yang lebih dari 1 tahun? ({{ number_format($stats['year_1']) }} entri)">
                 @csrf
                 <input type="hidden" name="period" value="1_year">
                 <button type="submit" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 transition-colors {{ $stats['year_1'] == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ $stats['year_1'] == 0 ? 'disabled' : '' }}>
@@ -89,31 +89,40 @@
 @endif
 
 {{-- Filters --}}
-<form method="GET" class="flex flex-wrap gap-3 mb-4">
-    <input type="text" name="action" value="{{ request('action') }}" placeholder="Filter action..." class="form-input w-48 text-sm">
-    <input type="date" name="date" value="{{ request('date') }}" class="form-input w-auto text-sm">
-    <button type="submit" class="btn-primary px-4 text-sm">Filter</button>
-    @if(request()->hasAny(['action', 'date', 'user_id']))
-    <a href="{{ route('super-admin.audit-log.index') }}" class="btn-secondary px-4 text-sm">Reset</a>
-    @endif
+<form method="GET" class="admin-table-toolbar">
+    <div class="admin-filter-grid">
+        <div class="filter-field">
+            <label class="form-label text-xs">Action</label>
+            <input type="text" name="action" value="{{ request('action') }}" placeholder="Filter action..." class="form-input text-sm">
+        </div>
+        <div class="filter-field">
+            <label class="form-label text-xs">Tanggal</label>
+            <input type="date" name="date" value="{{ request('date') }}" class="form-input text-sm">
+        </div>
+        <div class="admin-filter-actions">
+            <button type="submit" class="btn-primary text-sm h-[38px] px-4 flex-1 sm:flex-none">Filter</button>
+            @if(request()->hasAny(['action', 'date', 'user_id']))
+            <a href="{{ route('super-admin.audit-log.index') }}" class="btn-ghost text-sm h-[38px] px-3 border border-gray-200 flex-1 sm:flex-none text-center">Reset</a>
+            @endif
+        </div>
+    </div>
 </form>
 
-<div class="card overflow-hidden">
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th>Waktu</th>
-                <th>User</th>
-                <th>Action</th>
-                <th>Data</th>
-                <th>IP</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($logs as $log)
-            <tr>
-                <td class="text-xs text-gray-500 whitespace-nowrap">{{ $log->created_at->format('d/m/Y H:i:s') }}</td>
-                <td>
+<x-admin.table>
+    <thead>
+        <tr>
+            <th>Waktu</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Data</th>
+            <th>IP</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($logs as $log)
+        <tr>
+            <td data-label="Waktu" class="text-xs text-gray-500 whitespace-nowrap">{{ $log->created_at->format('d/m/Y H:i:s') }}</td>
+            <td data-label="User">
                     @if($log->user)
                     <p class="text-sm font-medium">{{ $log->user->name }}</p>
                     <p class="text-xs text-gray-400">{{ $log->user->email }}</p>
@@ -121,24 +130,23 @@
                     <span class="text-xs text-gray-400">System</span>
                     @endif
                 </td>
-                <td>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-blue-50 text-blue-700">{{ $log->action }}</span>
-                </td>
-                <td class="text-xs text-gray-500 max-w-xs">
+            <td data-label="Action">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-blue-50 text-blue-700">{{ $log->action }}</span>
+            </td>
+            <td data-label="Data" class="text-xs text-gray-500 max-w-xs">
                     @if($log->properties)
                     <span class="font-mono text-xs break-all line-clamp-2">{{ json_encode($log->properties, JSON_PRETTY_PRINT) }}</span>
                     @else
                     -
                     @endif
                 </td>
-                <td class="text-xs text-gray-400 font-mono">{{ $log->ip_address ?? '-' }}</td>
-            </tr>
-            @empty
-            <tr><td colspan="5" class="text-center py-8 text-gray-500">Belum ada log aktivitas</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+            <td data-label="IP" class="text-xs text-gray-400 font-mono">{{ $log->ip_address ?? '-' }}</td>
+        </tr>
+        @empty
+        <tr><td colspan="5" class="text-center py-8 text-gray-500">Belum ada log aktivitas</td></tr>
+        @endforelse
+    </tbody>
+</x-admin.table>
 
 <div class="mt-4">{{ $logs->withQueryString()->links() }}</div>
 @endsection

@@ -74,7 +74,21 @@ window.AdzanClient = (function () {
         };
     }
 
-    function playSimpleTone(volume) {
+    const MELODIES = {
+        simple: [
+            [523.25, 0.35], [659.25, 0.35], [783.99, 0.35], [659.25, 0.35], [523.25, 0.45],
+        ],
+        makkah: [
+            [392, 0.55], [440, 0.35], [494, 0.7], [440, 0.4], [392, 0.55],
+            [349, 0.45], [330, 0.9], [294, 0.7],
+        ],
+        madinah: [
+            [494, 0.4], [523, 0.4], [587, 0.55], [523, 0.3], [494, 0.45],
+            [440, 0.55], [494, 0.8], [523, 0.6],
+        ],
+    };
+
+    function playMelody(type, volume) {
         try {
             const ctx = getAudioContext();
             if (!ctx) return;
@@ -83,14 +97,12 @@ window.AdzanClient = (function () {
             gain.gain.value = (volume || 80) / 100;
             gain.connect(ctx.destination);
 
-            const melody = [
-                [523.25, 0.5], [587.33, 0.3], [659.25, 0.5], [698.46, 0.3],
-                [783.99, 0.8], [659.25, 0.5], [523.25, 0.8],
-            ];
+            const melody = MELODIES[type] || MELODIES.simple;
+            const wave = type === 'simple' ? 'sine' : 'triangle';
             let time = ctx.currentTime + 0.05;
             melody.forEach(([freq, dur]) => {
                 const osc = ctx.createOscillator();
-                osc.type = 'sine';
+                osc.type = wave;
                 osc.frequency.value = freq;
                 osc.connect(gain);
                 osc.start(time);
@@ -98,12 +110,22 @@ window.AdzanClient = (function () {
                 time += dur;
             });
         } catch (e) {
-            console.warn('[Adzan] Simple tone failed:', e);
+            console.warn('[Adzan] Tone failed:', type, e);
         }
     }
 
-    function playAdzanAudio(type, volume) {
-        const url = AUDIO_BASE + 'adzan-' + type + '.mp3';
+    function playSimpleTone(volume) {
+        playMelody('simple', volume);
+    }
+
+    function playChosenSound(type, volume) {
+        const sound = MELODIES[type] ? type : 'simple';
+        if (sound === 'simple') {
+            playMelody('simple', volume);
+            return;
+        }
+
+        const url = AUDIO_BASE + 'adzan-' + sound + '.mp3';
         getAudioContext();
         if (audioElement) {
             audioElement.pause();
@@ -112,12 +134,20 @@ window.AdzanClient = (function () {
         audioElement = new Audio(url);
         audioElement.volume = (volume || 80) / 100;
         audioElement.preload = 'auto';
+        let fellBack = false;
+        const useMelody = () => {
+            if (fellBack) return;
+            fellBack = true;
+            if (audioElement) {
+                audioElement.pause();
+                audioElement = null;
+            }
+            playMelody(sound, volume);
+        };
+        audioElement.addEventListener('error', useMelody);
         const playPromise = audioElement.play();
         if (playPromise && playPromise.catch) {
-            playPromise.catch((err) => {
-                console.warn('[Adzan] MP3 failed:', url, err);
-                playSimpleTone(volume);
-            });
+            playPromise.catch(useMelody);
         }
     }
 
@@ -165,11 +195,7 @@ window.AdzanClient = (function () {
         if (!s.sound_enabled) return;
 
         if (!isReminder) {
-            if (s.sound_type === 'simple') {
-                playSimpleTone(s.volume);
-            } else {
-                playAdzanAudio(s.sound_type, s.volume);
-            }
+            playChosenSound(s.sound_type, s.volume);
         } else {
             playSimpleTone(Math.min(s.volume, 60));
         }
@@ -247,9 +273,8 @@ window.AdzanClient = (function () {
     }
 
     async function init() {
-        settings = getSettings();
-        if (!settings) {
-            settings = defaultSettings();
+        settings = getSettings() || defaultSettings();
+        if (!getSettings()) {
             saveSettings(settings);
         }
 
@@ -277,20 +302,12 @@ window.AdzanClient = (function () {
         triggerAdzan,
         previewSound: function (type, volume) {
             showBanner('subuh', '--:--', false);
-            if (type === 'simple') {
-                playSimpleTone(volume ?? 80);
-            } else {
-                playAdzanAudio(type, volume ?? 80);
-            }
+            playChosenSound(type, volume ?? 80);
         },
         testSound: function () {
             const s = settings || getSettings() || defaultSettings();
             showBanner('subuh', '--:--', false);
-            if (s.sound_type === 'simple') {
-                playSimpleTone(s.volume);
-            } else {
-                playAdzanAudio(s.sound_type, s.volume);
-            }
+            playChosenSound(s.sound_type, s.volume);
         },
         stopAudio,
         hideBanner,

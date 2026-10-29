@@ -157,17 +157,17 @@ tajweed.ikhpiaa_shafawi { color: #D500B7; }
 .verse-number-badge {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 28px; height: 28px; padding: 0 6px;
-    background: #ecfdf5; color: #047857; border-radius: 8px;
+    background: var(--color-emerald-50); color: var(--color-primary); border-radius: 8px;
     font-size: 11px; font-weight: 700;
 }
-.verse-playing { background-color: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3) !important; }
-.verse-read { background-color: rgba(16, 185, 129, 0.04); }
-.verse-read .verse-number-badge { background: #d1fae5; }
+.verse-playing { background-color: color-mix(in srgb, var(--color-primary) 8%, transparent); border-color: color-mix(in srgb, var(--color-primary) 30%, transparent) !important; }
+.verse-read { background-color: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+.verse-read .verse-number-badge { background: var(--color-emerald-100); }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* === Khatam progress === */
-.khatam-bar-bg { background: linear-gradient(to right, #d1fae5, #a7f3d0); }
+.khatam-bar-bg { background: linear-gradient(to right, var(--color-emerald-100), var(--color-emerald-200)); }
 
 @@media (max-width: 640px) {
     .mushaf-frame { margin: 0 4px; }

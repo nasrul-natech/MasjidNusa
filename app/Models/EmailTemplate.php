@@ -15,11 +15,24 @@ class EmailTemplate extends Model
 
     public function render(array $data = []): string
     {
+        $brand = app(\App\Services\BrandingService::class);
+        $data = array_merge([
+            'app_name' => $brand->appName(),
+            'mosque_name' => $brand->mosqueName(),
+            'primary_color' => $brand->primaryColor(),
+            'accent_color' => $brand->accentColor(),
+        ], $data);
+
         $body = $this->body;
         foreach ($data as $key => $value) {
-            $body = str_replace('{{' . $key . '}}', $value, $body);
+            $body = str_replace('{{' . $key . '}}', (string) $value, $body);
         }
-        return $body;
+
+        return str_replace(
+            ['#064e3b', '#c59d3f'],
+            [$brand->primaryColor(), $brand->accentColor()],
+            $body
+        );
     }
 
     public static function findBySlug(string $slug): ?self

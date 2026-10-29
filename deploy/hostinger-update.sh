@@ -16,12 +16,12 @@ BRANCH="${BRANCH:-main}"
 echo "==> MasjidNusa Update"
 cd "$APP_DIR"
 
-# Pastikan symlink public_html masih benar
+# Jangan hapus public_html. Update berhenti bila symlink tidak mengarah ke app/public.
 cd "$DOMAIN_DIR"
 if [ ! -L public_html ] || [ "$(readlink public_html)" != "app/public" ]; then
-  echo "==> Perbaiki symlink public_html..."
-  rm -rf public_html
-  ln -sfn app/public public_html
+  echo "ERROR: public_html harus symlink ke app/public."
+  echo "       Update dihentikan. Folder yang ada tidak dihapus."
+  exit 1
 fi
 
 cd "$APP_DIR"
@@ -39,18 +39,18 @@ else
   "$PHP_BIN" "$HOME/composer.phar" install --no-dev --optimize-autoloader --no-interaction
 fi
 
-echo "==> Migrate..."
-"$PHP_BIN" artisan migrate --force
+echo "==> Migrate (tambah tabel baru saja, data yang ada tidak dihapus)..."
+artisan_safe migrate --force --no-interaction
+
+echo "==> Segarkan cache rute dan tampilan..."
+"$PHP_BIN" artisan route:clear
+"$PHP_BIN" artisan view:clear
 
 echo "==> Storage link..."
 "$PHP_BIN" artisan storage:link --force || "$PHP_BIN" artisan storage:link
 
-if command -v npm >/dev/null 2>&1 && [ -f package.json ]; then
-  echo "==> Build assets..."
-  npm ci --omit=dev 2>/dev/null || npm install --omit=dev
-  npm run build
-else
-  echo "==> Build assets (npm tidak tersedia — pastikan public/build sudah di-upload dari lokal)"
+if [ -f package.json ]; then
+  npm_build_assets
 fi
 
 # Verifikasi CSS/JS dari manifest ada di disk (cegah halaman tanpa Tailwind)

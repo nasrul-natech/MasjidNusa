@@ -68,18 +68,29 @@ class ReportController extends Controller
 
             foreach ($donations as $donation) {
                 fputcsv($file, [
-                    $donation->donation_code,
-                    $donation->donor_name,
-                    $donation->donor_email,
-                    $donation->campaign?->title ?? '-',
+                    $this->csvText($donation->donation_code),
+                    $this->csvText($donation->donor_name),
+                    $this->csvText($donation->donor_email),
+                    $this->csvText($donation->campaign?->title ?? '-'),
                     $donation->amount,
-                    $donation->status,
-                    $donation->created_at->format('d/m/Y H:i'),
+                    $this->csvText($donation->status),
+                    $this->csvText($donation->created_at->format('d/m/Y H:i')),
                 ]);
             }
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    private function csvText(mixed $value): string
+    {
+        $text = (string) ($value ?? '');
+
+        if ($text !== '' && in_array($text[0], ['=', '+', '-', '@'], true)) {
+            return "'".$text;
+        }
+
+        return $text;
     }
 }

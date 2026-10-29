@@ -161,8 +161,12 @@ class PrayerScheduleAdminController extends Controller
     {
         $request->validate(['province' => ['required', 'string']]);
 
-        $cities = $this->prayerService->getCities($request->province);
-        return response()->json(['data' => $cities]);
+        try {
+            $cities = $this->prayerService->getCities($request->province);
+            return response()->json(['data' => $cities]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 503);
+        }
     }
 
     // ===== IMPORT =====

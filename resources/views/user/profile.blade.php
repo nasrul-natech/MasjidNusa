@@ -67,7 +67,7 @@
 
             <div class="card p-5 space-y-4">
                 <h3 class="font-semibold text-gray-800">Ganti Password</h3>
-                <p class="text-xs text-gray-500">Kosongkan jika tidak ingin mengubah password</p>
+                <p class="text-xs text-gray-500">Kosongkan jika tidak ingin mengubah password. Untuk mengganti password, isi password saat ini.</p>
 
                 <div>
                     <label class="form-label">Password Saat Ini</label>

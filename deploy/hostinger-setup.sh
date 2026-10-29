@@ -102,17 +102,13 @@ chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
 
 # ── 8. Build assets (opsional) ────────────────────────────────
 echo "==> [8/8] Build frontend (opsional)..."
-if command -v npm >/dev/null 2>&1; then
-  npm ci --omit=dev 2>/dev/null || npm install --omit=dev
-  npm run build
-else
-  echo "    npm tidak tersedia — build di lokal lalu rsync public/build ke server"
-fi
+npm_build_assets
 
 # ── Migrate & cache ───────────────────────────────────────────
 echo "==> Migrate & optimize..."
 "$PHP_BIN" artisan config:clear
-"$PHP_BIN" artisan migrate --force
+echo "==> Migrate (tidak menghapus data yang sudah ada)..."
+artisan_safe migrate --force --no-interaction
 "$PHP_BIN" artisan config:cache
 "$PHP_BIN" artisan route:cache
 "$PHP_BIN" artisan view:cache

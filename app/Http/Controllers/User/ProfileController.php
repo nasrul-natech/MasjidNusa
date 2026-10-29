@@ -26,15 +26,9 @@ class ProfileController extends Controller
             'gender' => ['nullable', 'in:L,P'],
             'birth_date' => ['nullable', 'date'],
             'avatar' => ['nullable', 'image', 'max:2048'],
-            'current_password' => ['nullable'],
+            'current_password' => ['required_with:password', 'nullable', 'string'],
             'password' => ['nullable', 'min:8', 'confirmed'],
         ]);
-
-        if (isset($data['current_password']) && $data['current_password']) {
-            if (!Hash::check($data['current_password'], $user->password)) {
-                return back()->withErrors(['current_password' => 'Password saat ini tidak sesuai.']);
-            }
-        }
 
         $update = [
             'name' => $data['name'],
@@ -44,8 +38,11 @@ class ProfileController extends Controller
             'birth_date' => $data['birth_date'],
         ];
 
-        if (isset($data['password']) && $data['password']) {
-            $update['password'] = Hash::make($data['password']);
+        if (!empty($data['password'])) {
+            if (empty($data['current_password']) || !Hash::check($data['current_password'], $user->password)) {
+                return back()->withErrors(['current_password' => 'Password saat ini wajib diisi dan harus sesuai.'])->withInput();
+            }
+            $update['password'] = $data['password'];
         }
 
         if ($request->hasFile('avatar')) {

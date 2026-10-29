@@ -88,6 +88,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const months = @json($months);
     const statusData = @json($statusBreakdown);
+    const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#064e3b';
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#c59d3f';
 
     new Chart(document.getElementById('donationChart'), {
         type: 'bar',
@@ -96,8 +98,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Total Donasi (Rp)',
                 data: months.map(m => m.total),
-                backgroundColor: 'rgba(5, 150, 105, 0.7)',
-                borderColor: 'rgb(5, 150, 105)',
+                backgroundColor: brandColor,
+                borderColor: brandColor,
                 borderWidth: 1,
                 borderRadius: 8,
             }]
@@ -119,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pending: 'Menunggu', waiting_verification: 'Verifikasi', verified: 'Terverifikasi',
         paid: 'Lunas', rejected: 'Ditolak', expired: 'Kedaluwarsa'
     };
-    const statusColors = ['#059669','#3b82f6','#f59e0b','#8b5cf6','#ef4444','#6b7280','#14b8a6'];
+    const statusColors = [brandColor,'#3b82f6',accentColor,'#8b5cf6','#ef4444','#6b7280',accentColor];
 
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',

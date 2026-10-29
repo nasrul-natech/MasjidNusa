@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-C_Pkpqi5.css",
+    "file": "assets/app-DRYp1C18.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -13,5 +13,14 @@
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
+  },
+  "resources/js/prayer-locations.js": {
+    "file": "assets/prayer-locations-CdQTqQK3.js",
+    "name": "prayer-locations",
+    "src": "resources/js/prayer-locations.js",
+    "isEntry": true,
+    "css": [
+      "assets/prayer-locations-BG0u7bPk.css"
+    ]
   }
 }

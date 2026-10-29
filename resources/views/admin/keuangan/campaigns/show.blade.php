@@ -92,7 +92,7 @@
             </div>
             <div class="flex gap-2">
                 <form action="{{ route('admin.keuangan.campaigns.sync-amount', $campaign->id) }}" method="POST"
-                      onsubmit="return confirm('Sinkronkan nilai terkumpul dari total donasi terverifikasi di database?')">
+                      data-confirm="Sinkronkan nilai terkumpul dari total donasi terverifikasi di database?">
                     @csrf
                     <button type="submit" class="btn-action-green">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -127,6 +127,7 @@
             <h3 class="font-semibold text-gray-800">Riwayat Donasi Masuk</h3>
             <a href="{{ route('admin.keuangan.donations.index') }}?campaign={{ $campaign->id }}" class="text-xs text-emerald-600 hover:underline">Lihat semua</a>
         </div>
+        <div class="admin-table-wrapper">
         <table class="admin-table">
             <thead>
                 <tr>
@@ -144,20 +145,21 @@
                     $statusLabels = ['pending'=>'Menunggu','waiting_verification'=>'Perlu Verifikasi','verified'=>'Terverifikasi','paid'=>'Lunas','rejected'=>'Ditolak'];
                 @endphp
                 <tr>
-                    <td>
+                    <td data-label="Donatur">
                         <p class="font-medium text-sm">{{ $donation->is_anonymous ? 'Hamba Allah' : $donation->donor_name }}</p>
                         <p class="text-xs text-gray-400">{{ $donation->donor_email }}</p>
                     </td>
-                    <td class="font-semibold text-emerald-700">Rp {{ number_format($donation->amount, 0, ',', '.') }}</td>
-                    <td><x-badge type="{{ $statusColors[$donation->status] ?? 'gray' }}">{{ $statusLabels[$donation->status] ?? $donation->status }}</x-badge></td>
-                    <td class="text-xs text-gray-500 max-w-[150px] truncate">{{ $donation->message ?? '-' }}</td>
-                    <td class="text-xs text-gray-500">{{ $donation->created_at->format('d/m/Y H:i') }}</td>
+                    <td data-label="Jumlah" class="font-semibold text-emerald-700">Rp {{ number_format($donation->amount, 0, ',', '.') }}</td>
+                    <td data-label="Status"><x-badge type="{{ $statusColors[$donation->status] ?? 'gray' }}">{{ $statusLabels[$donation->status] ?? $donation->status }}</x-badge></td>
+                    <td data-label="Pesan" class="text-xs text-gray-500 max-w-[150px] truncate">{{ $donation->message ?? '-' }}</td>
+                    <td data-label="Tanggal" class="text-xs text-gray-500">{{ $donation->created_at->format('d/m/Y H:i') }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="5" class="text-center py-8 text-gray-400">Belum ada donasi masuk</td></tr>
                 @endforelse
             </tbody>
         </table>
+        </div>
         <div class="p-4">
             {{ $donations->links() }}
         </div>
