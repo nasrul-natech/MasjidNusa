@@ -30,9 +30,12 @@
 
                     {{-- Children --}}
                     @foreach($structure->children as $child)
-                    <div class="mt-2 pt-2 border-t border-gray-100">
-                        <p class="text-xs font-semibold text-gray-700">{{ $child->name }}</p>
-                        <p class="text-xs text-gray-500">{{ $child->position }}</p>
+                    <div class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3 text-left">
+                        <img src="{{ $child->photo_url }}" alt="{{ $child->name }}" class="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-emerald-100">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700">{{ $child->name }}</p>
+                            <p class="text-xs text-gray-500">{{ $child->position }}</p>
+                        </div>
                     </div>
                     @endforeach
                 </div>
