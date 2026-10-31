@@ -37,7 +37,13 @@ class HomeController extends Controller
             ->orderBy('time')
             ->get();
 
-        $upcomingActivities = Activity::published()->upcoming()->limit(4)->get();
+        if (\App\Support\NewFeature::enabled('activity_attendance')) {
+            $upcomingActivities = Activity::published()->with(['attendanceSetting', 'attendanceSession'])
+                ->currentAgenda()->orderByRaw('CASE WHEN start_date <= ? THEN 0 ELSE 1 END', [now()])
+                ->orderBy('start_date')->limit(4)->get();
+        } else {
+            $upcomingActivities = Activity::published()->upcoming()->limit(4)->get();
+        }
         $latestArticles = Article::published()->orderByDesc('published_at')->limit(4)->get();
         $activeCampaigns = DonationCampaign::active()->where('is_featured', true)->limit(3)->get();
 

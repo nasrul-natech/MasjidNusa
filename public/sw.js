@@ -3,7 +3,7 @@
  * Handles caching, push notifications, and offline support
  */
 
-const CACHE_VERSION = 'masjidnusa-v5';
+const CACHE_VERSION = 'masjidnusa-v6';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -29,7 +29,7 @@ self.addEventListener('activate', (event) => {
         caches.keys().then((keys) => {
             return Promise.all(
                 keys
-                    .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
+                    .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE && key !== 'mosque-display-public-photos-v1')
                     .map((key) => caches.delete(key))
             );
         })
@@ -50,6 +50,8 @@ self.addEventListener('fetch', (event) => {
         request.method !== 'GET' ||
         url.origin !== self.location.origin ||
         url.pathname.startsWith('/api/') ||
+        url.pathname === '/display-masjid' ||
+        url.pathname.startsWith('/display-masjid/') ||
         url.pathname.startsWith('/webhook/') ||
         url.pathname.includes('/payment-proofs/') ||
         privatePage

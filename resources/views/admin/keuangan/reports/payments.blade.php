@@ -14,7 +14,7 @@
     </form>
 </div>
 
-<x-admin.table>
+<x-admin.table title="Laporan Pembayaran">
         <thead>
             <tr>
                 <th>Kode Transaksi</th>

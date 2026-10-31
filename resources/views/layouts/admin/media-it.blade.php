@@ -1,5 +1,6 @@
 @extends('layouts.admin.base')
 
+@section('admin-skin', 'admin-skin-media-it')
 @section('panel-name', 'Admin Media & IT')
 
 @section('sidebar-menu')
@@ -28,4 +29,10 @@
 @can('manage_home_content')
 <x-sidebar-link href="{{ route('admin.media-it.notifications.index') }}" :active="request()->routeIs('admin.media-it.notifications.*')" icon="megaphone">Kirim Notifikasi</x-sidebar-link>
 @endcan
+@if(\App\Support\NewFeature::enabled('mosque_display'))
+@can('manage_mosque_display')
+<div class="sidebar-section-title">Display Masjid</div>
+<x-sidebar-link href="{{ route('admin.media-it.mosque-display.index') }}" :active="request()->routeIs('admin.media-it.mosque-display.*')" icon="photo">Pengaturan TV & Playlist</x-sidebar-link>
+@endcan
+@endif
 @endsection

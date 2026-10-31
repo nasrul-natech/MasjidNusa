@@ -30,7 +30,7 @@
     </div>
 </div>
 
-<x-admin.table>
+<x-admin.table title="Laporan Donasi">
         <thead>
             <tr>
                 <th>Kode</th>

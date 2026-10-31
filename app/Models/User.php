@@ -17,6 +17,25 @@ use Spatie\Permission\Traits\HasRoles;
  */
 class User extends Authenticatable
 {
+    public function hasAttendanceHistory(bool $currentRead = false): bool
+    {
+        $queries = [
+            DB::table('activity_attendances')->where('user_id', $this->id),
+            DB::table('activity_attendance_sessions')->where('opened_by', $this->id),
+            DB::table('attendance_reward_periods')->where('created_by', $this->id)->orWhere('finalized_by', $this->id),
+            DB::table('attendance_reward_recipients')->where('user_id', $this->id)
+                ->orWhere('status_changed_by', $this->id)->orWhere('delivered_by', $this->id),
+        ];
+        foreach ($queries as $query) {
+            // Locking reads see rows committed while deletion waited for the account lock.
+            if (($currentRead ? $query->lockForUpdate() : $query)->first(['id'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles, HasPushSubscriptions;
 

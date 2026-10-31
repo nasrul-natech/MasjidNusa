@@ -11,7 +11,7 @@
 @forelse($managements as $periodLabel => $members)
 <div class="mb-6">
     <h3 class="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Periode {{ $periodLabel }}</h3>
-    <x-admin.table>
+    <x-admin.table title="Kepengurusan">
             <thead>
                 <tr>
                     <th>Nama</th>

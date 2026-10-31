@@ -17,7 +17,7 @@
         @endif
         <span class="text-xs text-gray-400">{{ $management->start_year }} - {{ $management->end_year ?? 'Sekarang' }}</span>
     </div>
-    <x-admin.table>
+    <x-admin.table title="Struktur Organisasi">
             <thead>
                 <tr>
                     <th>Nama</th>

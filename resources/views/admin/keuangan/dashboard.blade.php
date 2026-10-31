@@ -43,7 +43,7 @@
 </div>
 
 {{-- Recent Donations Table --}}
-<x-admin.table>
+<x-admin.table title="Donasi Terbaru">
     <thead>
         <tr>
             <th>Donatur</th>

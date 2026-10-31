@@ -452,7 +452,7 @@ function heroSlider(total, mode) {
         @if($upcomingActivities->count())
         <section>
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-base lg:text-lg font-bold text-gray-900">Kegiatan Mendatang</h2>
+                <h2 class="text-base lg:text-lg font-bold text-gray-900">{{ \App\Support\NewFeature::enabled('activity_attendance') ? 'Kegiatan Aktif & Mendatang' : 'Kegiatan Mendatang' }}</h2>
                 <a href="{{ route('kegiatan.index') }}" class="text-xs lg:text-sm text-emerald-600 font-medium hover:text-emerald-700">Lihat semua →</a>
             </div>
             {{-- Mobile: horizontal scroll --}}
@@ -471,6 +471,7 @@ function heroSlider(total, mode) {
                             <div class="absolute top-2 left-2 bg-emerald-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg">{{ $activity->start_date->format('d M') }}</div>
                         </div>
                         <div class="p-3">
+                            @include('public.kegiatan.session-badge')
                             <p class="text-xs font-bold text-gray-900 line-clamp-2">{{ $activity->title }}</p>
                             @if($activity->location)<p class="text-[10px] text-gray-500 mt-1">📍 {{ $activity->location }}</p>@endif
                         </div>
@@ -493,6 +494,7 @@ function heroSlider(total, mode) {
                         <div class="absolute top-2.5 left-2.5 bg-emerald-700 text-white text-xs font-bold px-2 py-1 rounded-lg">{{ $activity->start_date->format('d M Y') }}</div>
                     </div>
                     <div class="p-3.5">
+                        @include('public.kegiatan.session-badge')
                         <p class="text-sm font-bold text-gray-900 line-clamp-2">{{ $activity->title }}</p>
                         @if($activity->location)<p class="text-xs text-gray-500 mt-1">📍 {{ Str::limit($activity->location, 40) }}</p>@endif
                     </div>

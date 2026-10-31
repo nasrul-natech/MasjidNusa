@@ -22,7 +22,7 @@
     </div>
 </x-admin.table-filter>
 
-<x-admin.table>
+<x-admin.table title="Donasi Masuk">
     <thead>
         <tr>
             <x-admin.sortable-th column="donation_code" label="Kode" />

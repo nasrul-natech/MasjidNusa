@@ -131,6 +131,9 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if ($user->hasAttendanceHistory()) {
+            return back()->with('error', 'Akun memiliki riwayat kehadiran/hadiah. Gunakan nonaktifkan akun, bukan hapus.');
+        }
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Anda tidak bisa menghapus akun sendiri.');
         }
@@ -139,7 +142,7 @@ class UserController extends Controller
         DB::transaction(function () use ($user, &$blocked) {
             $this->lockSuperAdmins();
             $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
-            if ($fresh && $this->removesLastActiveSuperAdmin($fresh, false)) {
+            if ($fresh && ($this->removesLastActiveSuperAdmin($fresh, false) || $fresh->hasAttendanceHistory(true))) {
                 $blocked = true;
 
                 return;
@@ -150,7 +153,7 @@ class UserController extends Controller
         });
 
         if ($blocked) {
-            return back()->with('error', 'Tidak bisa menghapus super admin terakhir yang masih aktif.');
+            return back()->with('error', 'Tidak bisa menghapus super admin terakhir atau akun dengan riwayat kehadiran/hadiah. Gunakan nonaktifkan akun.');
         }
 
         return back()->with('success', 'User berhasil dihapus.');
@@ -288,7 +291,7 @@ class UserController extends Controller
 
             foreach ($users as $user) {
                 $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
-                if (!$fresh) {
+                if (!$fresh || $fresh->hasAttendanceHistory(true)) {
                     $skipped++;
 
                     continue;

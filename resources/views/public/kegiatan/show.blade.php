@@ -27,6 +27,10 @@
     @endif
 
     <div class="px-4 py-5 max-w-2xl">
+        @include('public.kegiatan.session-badge')
+        @if(\App\Support\NewFeature::enabled('activity_attendance') && $activity->attendanceSetting?->enabled)
+            @include('public.kegiatan.attendance')
+        @endif
         {{-- Info --}}
         <div class="card p-4 mb-5 space-y-2.5">
             <div class="flex items-center gap-3 text-sm">

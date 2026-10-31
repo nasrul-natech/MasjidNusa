@@ -16,7 +16,7 @@
     <a href="{{ route('admin.media-it.articles.create') }}" class="btn-primary">+ Tulis Artikel</a>
 </div>
 
-<x-admin.table>
+<x-admin.table title="Artikel & Berita">
     <thead>
         <tr>
             <th>Artikel</th>

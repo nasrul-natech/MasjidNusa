@@ -8,7 +8,7 @@
     <a href="{{ route('super-admin.email-templates.create') }}" class="btn-primary">+ Tambah Template</a>
 </div>
 
-<x-admin.table>
+<x-admin.table title="Template Email">
     <thead>
         <tr>
             <th>Nama Template</th>

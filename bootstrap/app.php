@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => CheckRole::class,
             'module' => EnsureModuleActive::class,
+            'new-feature' => \App\Http\Middleware\EnsureNewFeatureActive::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'two-factor' => \App\Http\Middleware\EnsureTwoFactorVerified::class,
             'pending-two-factor' => \App\Http\Middleware\EnsurePendingTwoFactor::class,

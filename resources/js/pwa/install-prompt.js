@@ -4,16 +4,20 @@
  * beforeinstallprompt ditangkap di <head> (window.__pwaPrompt)
  * supaya tidak terlewat saat Vite module belum load.
  *
+ * Popup ditampilkan setiap muat halaman jika belum terinstal (standalone / appinstalled).
+ * "Nanti saja" hanya menutup untuk halaman ini; halaman berikutnya tampil lagi.
+ *
  * prompt() dipanggil sinkron di klik — tanpa await di depan,
  * karena Chrome membatalkan dialog jika gesture user sudah hilang.
  */
 
 const PWA_INSTALLED_KEY = 'masjidnusa_pwa_installed';
-const PWA_SESSION_KEY   = 'masjidnusa_pwa_session_dismissed';
 
 function isPWAInstalled() {
     return (
         window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
         window.navigator.standalone === true ||
         localStorage.getItem(PWA_INSTALLED_KEY) === 'true'
     );
@@ -26,41 +30,35 @@ function isIOS() {
     );
 }
 
-function isAndroid() {
-    return /android/i.test(navigator.userAgent);
+function isMobileLike() {
+    return isIOS() || /android|mobile/i.test(navigator.userAgent);
 }
 
-function isMobile() {
-    return isIOS() || isAndroid() || /mobile/i.test(navigator.userAgent);
-}
-
-function isPageReload() {
-    try {
-        const nav = performance.getEntriesByType('navigation')[0];
-        if (nav) return nav.type === 'reload';
-    } catch (_) {}
-
-    return performance.navigation?.type === 1;
+function canOfferInstallUi() {
+    return isMobileLike() || Boolean(window.__pwaPrompt);
 }
 
 function shouldShowPopup() {
-    if (isPWAInstalled()) return false;
-    if (!isMobile()) return false;
+    return !isPWAInstalled() && canOfferInstallUi();
+}
 
-    if (isPageReload()) {
-        sessionStorage.removeItem(PWA_SESSION_KEY);
-        return true;
-    }
-
-    return sessionStorage.getItem(PWA_SESSION_KEY) !== 'true';
+function syncInstallButton() {
+    const btn = document.getElementById('pwa-install-btn');
+    if (!btn) return;
+    const canNative = Boolean(window.__pwaPrompt);
+    btn.disabled = !canNative && !isIOS();
+    btn.classList.toggle('opacity-50', btn.disabled);
+    btn.classList.toggle('cursor-not-allowed', btn.disabled);
 }
 
 function showInstallPopup() {
+    if (!shouldShowPopup()) return;
+
     const popup = document.getElementById('pwa-install-popup');
     if (!popup) return;
 
     const androidContent = document.getElementById('pwa-android-content');
-    const iosContent     = document.getElementById('pwa-ios-content');
+    const iosContent = document.getElementById('pwa-ios-content');
     if (!androidContent || !iosContent) return;
 
     if (isIOS()) {
@@ -69,15 +67,11 @@ function showInstallPopup() {
     } else {
         iosContent.classList.add('hidden');
         androidContent.classList.remove('hidden');
+        syncInstallButton();
     }
 
     popup.classList.remove('hidden');
     popup.classList.add('flex');
-}
-
-function showAndroidInstallPopup() {
-    if (isIOS() || !window.__pwaPrompt || !shouldShowPopup()) return;
-    showInstallPopup();
 }
 
 function hideInstallPopup() {
@@ -88,7 +82,6 @@ function hideInstallPopup() {
 }
 
 function dismissPopup() {
-    sessionStorage.setItem(PWA_SESSION_KEY, 'true');
     hideInstallPopup();
 }
 
@@ -103,9 +96,19 @@ function triggerNativeInstall() {
             hideInstallPopup();
         }
         window.__pwaPrompt = null;
+        syncInstallButton();
     }).catch(() => {
         window.__pwaPrompt = null;
+        syncInstallButton();
     });
+}
+
+function openInstallPopupIfEligible() {
+    if (!shouldShowPopup()) {
+        hideInstallPopup();
+        return;
+    }
+    showInstallPopup();
 }
 
 window.addEventListener('appinstalled', () => {
@@ -114,21 +117,27 @@ window.addEventListener('appinstalled', () => {
     hideInstallPopup();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (isIOS() && shouldShowPopup()) {
-        setTimeout(showInstallPopup, 800);
-    } else {
-        showAndroidInstallPopup();
-    }
-
+function bindInstallPopupUi() {
     document.getElementById('pwa-dismiss-btn')?.addEventListener('click', dismissPopup);
     document.getElementById('pwa-dismiss-btn-2')?.addEventListener('click', dismissPopup);
     document.getElementById('pwa-install-btn')?.addEventListener('click', triggerNativeInstall);
     document.getElementById('pwa-install-popup')?.addEventListener('click', (e) => {
         if (e.target === e.currentTarget) dismissPopup();
     });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    bindInstallPopupUi();
+    if (isIOS()) {
+        setTimeout(openInstallPopupIfEligible, 400);
+    } else {
+        openInstallPopupIfEligible();
+    }
 });
 
-window.addEventListener('pwa-install-ready', showAndroidInstallPopup);
+window.addEventListener('pwa-install-ready', () => {
+    syncInstallButton();
+    openInstallPopupIfEligible();
+});
 
-window.masjidNusaPWA = { dismissPopup, showInstallPopup };
+window.masjidNusaPWA = { dismissPopup, showInstallPopup: openInstallPopupIfEligible };

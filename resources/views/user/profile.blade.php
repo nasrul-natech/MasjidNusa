@@ -3,9 +3,21 @@
 @section('title', 'Profil Saya')
 
 @section('content')
-<div class="max-w-screen-xl mx-auto px-4 py-6">
+<div class="max-w-screen-xl mx-auto px-4 py-6 user-page-shell">
     <div class="max-w-lg mx-auto">
         <h1 class="text-xl font-bold text-gray-900 mb-6">Profil Saya</h1>
+        @if(\App\Support\NewFeature::enabled('activity_attendance') && $user->isJamaah() && !$user->isAdmin())
+        <div class="card overflow-hidden mb-5 shadow-md">
+            <div class="card-header bg-gradient-to-r from-emerald-600 to-teal-600 border-0 py-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-sm font-bold text-white">Kehadiran &amp; Poin</h2>
+                <x-badge type="success" class="!bg-white/20 !text-white ring-1 ring-white/30">Jamaah</x-badge>
+            </div>
+            <div class="card-body flex flex-col sm:flex-row gap-3 bg-gradient-to-b from-emerald-50/50 to-white p-4">
+                <a href="{{ route('user.attendance') }}" class="btn-secondary text-center flex-1 shadow-sm border-emerald-200 hover:bg-emerald-50">Kehadiran Saya</a>
+                <a href="{{ route('user.attendance.leaderboard') }}" class="btn-primary text-center flex-1 shadow-md">Papan Peringkat</a>
+            </div>
+        </div>
+        @endif
 
         {{-- Avatar --}}
         <div class="flex items-center gap-4 mb-6 p-5 card">

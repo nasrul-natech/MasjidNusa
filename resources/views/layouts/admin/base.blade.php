@@ -14,7 +14,7 @@
     <x-branding-styles />
     @stack('styles')
 </head>
-<body class="bg-gray-50 antialiased" x-data="{ sidebar: false }" @keydown.escape="sidebar = false">
+<body class="bg-gray-50 antialiased @yield('admin-skin')" x-data="{ sidebar: false }" @keydown.escape="sidebar = false">
 
     <div class="flex h-screen overflow-hidden">
 
@@ -86,8 +86,9 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
             {{-- Top Bar --}}
-            <header class="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-3">
+            <header class="relative bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0 shadow-sm">
+                <div class="admin-page-accent absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600" aria-hidden="true"></div>
+                <div class="flex items-center gap-3 min-w-0 pt-0.5">
                     <button @click="sidebar = !sidebar"
                         class="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                         :aria-label="sidebar ? 'Tutup menu' : 'Buka menu'">
@@ -95,9 +96,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                         </svg>
                     </button>
-                    <div>
-                        <h1 class="text-sm font-semibold text-gray-900 leading-tight">@yield('page-title', 'Dashboard')</h1>
-                        <p class="text-xs text-gray-400 hidden sm:block leading-tight">@yield('page-subtitle', '')</p>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h1 class="text-base font-bold text-gray-900 leading-tight truncate">@yield('page-title', 'Dashboard')</h1>
+                            @hasSection('page-badge')
+                                @yield('page-badge')
+                            @endif
+                        </div>
+                        <p class="text-xs text-gray-500 hidden sm:block leading-tight truncate">@yield('page-subtitle', '')</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">

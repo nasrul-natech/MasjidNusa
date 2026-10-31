@@ -30,6 +30,18 @@
         <div class="space-y-4">
             <div class="card p-5 space-y-4">
                 <h3 class="font-semibold text-gray-800 text-sm">Pengaturan</h3>
+                @if(\App\Support\NewFeature::enabled('activity_attendance'))
+                @can('configure_activity_attendance')
+                <fieldset class="space-y-2" {{ $activity->exists && $activity->attendanceSession ? 'disabled' : '' }}>
+                    <input type="hidden" name="attendance_enabled" value="0">
+                    <label class="flex gap-2"><input type="checkbox" name="attendance_enabled" value="1" @checked(old('attendance_enabled', $activity->attendanceSetting?->enabled ?? false))> Aktifkan check-in jamaah</label>
+                    <label class="form-label">Durasi check-in (menit)</label>
+                    <input class="form-input" type="number" name="attendance_minutes" min="1" max="30" value="{{ old('attendance_minutes', ($activity->attendanceSetting?->duration_seconds ?? 120) / 60) }}">
+                    <p class="text-xs text-gray-500">Default 2 menit sejak Media IT atau Operasional menyelesaikan kegiatan. Terkunci setelah dibuka.</p>
+                </fieldset>
+                @error('attendance_minutes')<p class="text-red-700">{{ $message }}</p>@enderror
+                @endcan
+                @endif
 
                 <div>
                     <label class="form-label">Status</label>

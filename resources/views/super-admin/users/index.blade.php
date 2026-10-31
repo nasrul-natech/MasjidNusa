@@ -170,7 +170,7 @@
     <div id="user-bulk-ids"></div>
 </form>
 
-<x-admin.table>
+<x-admin.table title="Pengguna Terdaftar">
     <thead>
         <tr>
             <th class="w-10 text-center px-2">

@@ -11,7 +11,11 @@ auth.json
 /node_modules/
 
 # ── Build & cache ──────────────────────────────────────────────
-/public/build/
+# Production bundles are already versioned; keep new hashed assets with their manifest.
+/public/build/*
+!/public/build/manifest.json
+!/public/build/assets/
+!/public/build/assets/**
 /public/hot
 /public/storage
 /bootstrap/cache/*

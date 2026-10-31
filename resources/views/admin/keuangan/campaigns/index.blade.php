@@ -66,7 +66,7 @@
 </div>
 
 {{-- Campaign Table --}}
-<x-admin.table>
+<x-admin.table title="Program Donasi">
         <thead>
             <tr>
                 <th>Program Donasi</th>

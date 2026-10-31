@@ -56,7 +56,8 @@
     @include('components.popup-ad')
 
     {{-- Top Header --}}
-    <header class="sticky top-0 z-40 bg-white border-b border-gray-100 safe-top shadow-sm">
+    <header class="sticky top-0 z-40 bg-white border-b border-gray-100 safe-top shadow-sm relative">
+        <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600" aria-hidden="true"></div>
         <div class="max-w-7xl mx-auto px-4 lg:px-6">
             <div class="flex items-center justify-between h-14 lg:h-16">
                 {{-- Logo --}}

@@ -1,5 +1,9 @@
 <?php
 
+require __DIR__.'/activity-attendance.php';
+require __DIR__.'/attendance-rewards.php';
+require __DIR__.'/mosque-display.php';
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;

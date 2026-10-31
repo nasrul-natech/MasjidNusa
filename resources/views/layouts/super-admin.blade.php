@@ -1,5 +1,6 @@
 @extends('layouts.admin.base')
 
+@section('admin-skin', 'admin-skin-super')
 @section('panel-name', 'Super Admin')
 
 @section('sidebar-menu')

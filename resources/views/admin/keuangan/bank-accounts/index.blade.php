@@ -8,7 +8,7 @@
     <a href="{{ route('admin.keuangan.bank-accounts.create') }}" class="btn-primary">+ Tambah Rekening</a>
 </div>
 
-<x-admin.table>
+<x-admin.table title="Rekening Bank">
     <thead>
         <tr>
             <th>Bank</th>

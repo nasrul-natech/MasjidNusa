@@ -1,6 +1,11 @@
-@props(['action' => null, 'placeholder' => 'Cari...'])
+@props(['action' => null, 'placeholder' => 'Cari...', 'title' => 'Filter & pencarian'])
 
-<form method="GET" action="{{ $action ?? url()->current() }}" {{ $attributes->merge(['class' => 'admin-table-toolbar']) }}>
+<div class="card overflow-hidden shadow-md mb-4">
+    <div class="card-header admin-table-filter-header flex-wrap gap-2 py-3">
+        <h2 class="text-sm font-bold admin-table-filter-title">{{ $title }}</h2>
+        <x-badge type="info">Filter</x-badge>
+    </div>
+<form method="GET" action="{{ $action ?? url()->current() }}" {{ $attributes->merge(['class' => 'admin-table-toolbar !border-0 !shadow-none !rounded-none !mb-0']) }}>
     <div class="admin-filter-grid">
         {{ $slot }}
         <div class="admin-filter-actions">
@@ -14,3 +19,4 @@
         </div>
     </div>
 </form>
+</div>

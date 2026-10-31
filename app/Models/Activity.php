@@ -24,6 +24,16 @@ class Activity extends Model
         return $this->belongsTo(ActivityCategory::class);
     }
 
+    public function attendanceSetting()
+    {
+        return $this->hasOne(ActivityAttendanceSetting::class);
+    }
+
+    public function attendanceSession()
+    {
+        return $this->hasOne(ActivityAttendanceSession::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -47,6 +57,31 @@ class Activity extends Model
     public function scopeUpcoming(Builder $query): Builder
     {
         return $query->where('start_date', '>=', now())->orderBy('start_date');
+    }
+
+    public function scopeCurrentAgenda(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query) {
+            $query->where('start_date', '>=', now())
+                ->orWhere(function (Builder $query) {
+                    $query->where('status', 'publish')->where('start_date', '<=', now())
+                        ->whereHas('attendanceSetting', fn ($settings) => $settings->where('enabled', true))
+                        ->whereDoesntHave('attendanceSession');
+                })
+                ->orWhereHas('attendanceSession', fn ($session) => $session->where('closes_at', '>', now()));
+        });
+    }
+
+    public function getAttendancePhaseAttribute(): string
+    {
+        if ($this->status !== 'publish' || ! $this->attendanceSetting?->enabled) {
+            return 'disabled';
+        }
+        if ($session = $this->attendanceSession) {
+            return now()->lt($session->closes_at) ? 'checkin' : 'closed';
+        }
+
+        return now()->gte($this->start_date) ? 'ongoing' : 'upcoming';
     }
 
     public function scopePast(Builder $query): Builder

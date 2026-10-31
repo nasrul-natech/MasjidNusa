@@ -1,8 +1,19 @@
 @extends('layouts.admin.base')
 
+@section('admin-skin', 'admin-skin-operasional')
 @section('panel-name', 'Admin Operasional')
 
 @section('sidebar-menu')
+@if(\App\Support\NewFeature::enabled('activity_attendance'))
+@can('manage_activity_attendance')
+<x-sidebar-link href="{{ route('admin.operasional.attendance.index') }}" :active="request()->routeIs('admin.operasional.attendance.*')" icon="users">Absensi Kegiatan</x-sidebar-link>
+@endcan
+@endif
+@if(\App\Support\NewFeature::enabled('attendance_rewards'))
+@can('view_attendance_rewards')
+<x-sidebar-link href="{{ route('admin.operasional.attendance-rewards.index') }}" :active="request()->routeIs('admin.operasional.attendance-rewards.*')" icon="users">Poin Kehadiran Jamaah</x-sidebar-link>
+@endcan
+@endif
 @can('access_admin_operasional')
 <x-sidebar-link href="{{ route('admin.operasional.dashboard') }}" :active="request()->routeIs('admin.operasional.dashboard')" icon="dashboard">Dashboard</x-sidebar-link>
 @endcan

@@ -36,7 +36,7 @@
 </x-admin.table-filter>
 
 {{-- Doa List --}}
-<x-admin.table>
+<x-admin.table title="Daftar Doa" badge="Konten">
     <thead>
         <tr>
             <th class="w-10">#</th>

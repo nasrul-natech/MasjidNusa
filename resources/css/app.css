@@ -46,7 +46,7 @@
     }
 
     .form-label {
-        @apply block text-sm font-semibold text-gray-700 mb-1.5;
+        @apply block text-sm font-bold text-gray-800 mb-1.5;
     }
 
     .form-error {
@@ -55,15 +55,203 @@
 
     /* Card */
     .card {
-        @apply bg-white rounded-2xl shadow-sm border border-gray-100;
+        @apply bg-white rounded-2xl shadow-md border border-gray-200/80;
     }
 
     .card-header {
-        @apply px-6 py-4 border-b border-gray-100 flex items-center justify-between;
+        @apply px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-2;
+    }
+
+    .card-header:not([class*="card-h-"]):not([class*="bg-"]):not(.admin-table-card-header):not(.admin-table-filter-header):not([class*="card-header-soft-"]) {
+        @apply bg-gradient-to-r from-emerald-50 via-white to-teal-50/90 border-emerald-100/80;
+    }
+
+    .card-header:not([class*="card-h-"]):not(.admin-table-card-header):not(.admin-table-filter-header):not([class*="card-header-soft-"]) h2,
+    .card-header:not([class*="card-h-"]):not(.admin-table-card-header):not(.admin-table-filter-header):not([class*="card-header-soft-"]) h3 {
+        @apply text-sm font-bold text-emerald-950;
+    }
+
+    /* Soft panel headers — teks gelap, latar berwarna (kontras aman) */
+    .card-header-soft-emerald {
+        @apply bg-emerald-100 border-b border-emerald-200;
+    }
+    .card-header-soft-emerald .panel-card-title,
+    .card-header-soft-emerald h2,
+    .card-header-soft-emerald h3 {
+        @apply text-emerald-950;
+    }
+    .card-header-soft-emerald .panel-card-desc {
+        @apply text-emerald-900/80;
+    }
+
+    .card-header-soft-sky {
+        @apply bg-sky-100 border-b border-sky-200;
+    }
+    .card-header-soft-sky .panel-card-title,
+    .card-header-soft-sky h2,
+    .card-header-soft-sky h3 {
+        @apply text-sky-950;
+    }
+
+    .card-header-soft-amber {
+        @apply bg-amber-100 border-b border-amber-200;
+    }
+    .card-header-soft-amber .panel-card-title,
+    .card-header-soft-amber h2,
+    .card-header-soft-amber h3 {
+        @apply text-amber-950;
+    }
+
+    .card-header-soft-indigo {
+        @apply bg-indigo-100 border-b border-indigo-200;
+    }
+    .card-header-soft-indigo .panel-card-title,
+    .card-header-soft-indigo h2,
+    .card-header-soft-indigo h3 {
+        @apply text-indigo-950;
+    }
+
+    .card-header-soft-purple {
+        @apply bg-purple-100 border-b border-purple-200;
+    }
+    .card-header-soft-purple .panel-card-title,
+    .card-header-soft-purple h2,
+    .card-header-soft-purple h3 {
+        @apply text-purple-950;
+    }
+
+    .card-header-soft-teal {
+        @apply bg-teal-100 border-b border-teal-200;
+    }
+    .card-header-soft-teal .panel-card-title,
+    .card-header-soft-teal h2,
+    .card-header-soft-teal h3 {
+        @apply text-teal-950;
+    }
+
+    .card-header-soft-slate {
+        @apply bg-slate-200 border-b border-slate-300;
+    }
+    .card-header-soft-slate .panel-card-title,
+    .card-header-soft-slate h2,
+    .card-header-soft-slate h3 {
+        @apply text-slate-900;
+    }
+
+    .admin-table-card-title {
+        @apply text-sm font-bold;
+    }
+
+    .detail-label {
+        @apply text-xs font-bold uppercase tracking-wide text-emerald-800 mb-1;
+    }
+
+    .detail-value {
+        @apply text-sm font-semibold text-gray-900;
     }
 
     .card-body {
-        @apply p-6;
+        @apply p-5 sm:p-6;
+    }
+
+    /* Colored panel headers (TV admin, forms, sections) */
+    .card-h-emerald {
+        @apply bg-gradient-to-r from-emerald-600 to-teal-600 border-0 text-white;
+    }
+    .card-h-emerald .panel-card-title,
+    .card-h-emerald h2,
+    .card-h-emerald h3 {
+        @apply text-white;
+    }
+    .card-h-emerald .panel-card-desc {
+        @apply text-emerald-50/90;
+    }
+
+    .card-h-sky {
+        @apply bg-gradient-to-r from-sky-500 to-blue-600 border-0 text-white;
+    }
+    .card-h-sky h2,
+    .card-h-sky h3,
+    .card-h-sky .panel-card-title {
+        @apply text-white;
+    }
+
+    .card-h-amber {
+        @apply bg-gradient-to-r from-amber-500 to-orange-600 border-0 text-white;
+    }
+    .card-h-amber h2,
+    .card-h-amber h3,
+    .card-h-amber .panel-card-title {
+        @apply text-white;
+    }
+
+    .card-h-indigo {
+        @apply bg-gradient-to-r from-indigo-600 to-violet-600 border-0 text-white;
+    }
+    .card-h-indigo h2,
+    .card-h-indigo h3,
+    .card-h-indigo .panel-card-title {
+        @apply text-white;
+    }
+
+    .card-h-purple {
+        @apply bg-gradient-to-r from-purple-600 to-fuchsia-600 border-0 text-white;
+    }
+    .card-h-purple h2,
+    .card-h-purple h3,
+    .card-h-purple .panel-card-title {
+        @apply text-white;
+    }
+
+    .card-h-rose {
+        @apply bg-gradient-to-r from-rose-600 to-red-600 border-0 text-white;
+    }
+    .card-h-rose h2,
+    .card-h-rose h3,
+    .card-h-rose .panel-card-title {
+        @apply text-white;
+    }
+
+    .card-h-teal {
+        @apply bg-gradient-to-r from-teal-600 to-cyan-600 border-0 text-white;
+    }
+    .card-h-teal h2,
+    .card-h-teal h3,
+    .card-h-teal .panel-card-title {
+        @apply text-white;
+    }
+
+    .card-h-slate {
+        @apply bg-gradient-to-r from-slate-700 to-slate-900 border-0 text-white;
+    }
+    .card-h-slate h2,
+    .card-h-slate h3,
+    .card-h-slate .panel-card-title {
+        @apply text-white;
+    }
+
+    /* Soft tinted headers (mosque display style) */
+    .card-header.bg-emerald-50,
+    .card-header.bg-teal-50,
+    .card-header.bg-sky-50,
+    .card-header.bg-amber-50,
+    .card-header.bg-indigo-50,
+    .card-header.bg-purple-50,
+    .card-header.bg-blue-50,
+    .card-header.bg-red-50 {
+        @apply border-b;
+    }
+
+    /* Form / content cards: promote first heading to panel strip */
+    main .card.p-5 > h3:first-child,
+    main .card.p-4 > h3:first-child,
+    .max-w-lg .card.p-5 > h3:first-child {
+        @apply -mx-5 -mt-5 mb-4 px-5 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 text-sm font-bold text-emerald-950 rounded-t-2xl;
+    }
+
+    body[class*="admin-skin"] main .card.p-5 > h3:first-child,
+    body[class*="admin-skin"] main .card.p-4 > h3:first-child {
+        @apply -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 px-5 sm:px-6;
     }
 
     /* Badge */
@@ -224,7 +412,7 @@
     }
 
     .admin-table-toolbar {
-        @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4;
+        @apply bg-gradient-to-b from-slate-50/80 to-white p-4 mb-0;
     }
 
     .admin-table-toolbar .form-label {
@@ -290,6 +478,111 @@
 
     .section-subtitle {
         @apply text-sm text-gray-500 mt-1;
+    }
+
+    /* Admin panel skins */
+    .admin-skin-operasional .admin-page-accent {
+        @apply from-emerald-600 via-teal-500 to-emerald-600;
+    }
+    .admin-skin-operasional .admin-table thead tr {
+        @apply from-emerald-700 to-teal-600;
+    }
+    .admin-skin-operasional main .card.p-5 > h3:first-child,
+    .admin-skin-operasional main .card.p-4 > h3:first-child {
+        @apply from-emerald-50 to-teal-50 border-emerald-100 text-emerald-950;
+    }
+    .admin-skin-operasional .admin-table-card-header {
+        @apply bg-emerald-100 border-emerald-200;
+    }
+    .admin-skin-operasional .admin-table-card-title {
+        @apply text-emerald-950;
+    }
+    .admin-skin-operasional .admin-table-filter-header {
+        @apply bg-teal-100 border-teal-200;
+    }
+    .admin-skin-operasional .admin-table-filter-title {
+        @apply text-teal-950;
+    }
+
+    .admin-skin-media-it .admin-page-accent {
+        @apply from-indigo-600 via-violet-500 to-indigo-600;
+    }
+    .admin-skin-media-it .admin-table thead tr {
+        @apply from-indigo-600 to-violet-600;
+    }
+    .admin-skin-media-it main .card.p-5 > h3:first-child,
+    .admin-skin-media-it main .card.p-4 > h3:first-child {
+        @apply from-indigo-50 to-violet-50 border-indigo-100 text-indigo-950;
+    }
+    .admin-skin-media-it .admin-table-card-header {
+        @apply bg-indigo-100 border-indigo-200;
+    }
+    .admin-skin-media-it .admin-table-card-title {
+        @apply text-indigo-950;
+    }
+    .admin-skin-media-it .admin-table-filter-header {
+        @apply bg-violet-100 border-violet-200;
+    }
+    .admin-skin-media-it .admin-table-filter-title {
+        @apply text-violet-950;
+    }
+
+    .admin-skin-keuangan .admin-page-accent {
+        @apply from-amber-600 via-orange-500 to-amber-600;
+    }
+    .admin-skin-keuangan .admin-table thead tr {
+        @apply from-amber-600 to-orange-600;
+    }
+    .admin-skin-keuangan main .card.p-5 > h3:first-child,
+    .admin-skin-keuangan main .card.p-4 > h3:first-child {
+        @apply from-amber-50 to-orange-50 border-amber-200 text-amber-950;
+    }
+    .admin-skin-keuangan .admin-table-card-header {
+        @apply bg-amber-100 border-amber-200;
+    }
+    .admin-skin-keuangan .admin-table-card-title {
+        @apply text-amber-950;
+    }
+    .admin-skin-keuangan .admin-table-filter-header {
+        @apply bg-orange-100 border-orange-200;
+    }
+    .admin-skin-keuangan .admin-table-filter-title {
+        @apply text-orange-950;
+    }
+
+    .admin-skin-super .admin-page-accent {
+        @apply from-slate-700 via-slate-600 to-slate-800;
+    }
+    .admin-skin-super .admin-table thead tr {
+        @apply from-slate-700 to-slate-900;
+    }
+    .admin-skin-super main .card.p-5 > h3:first-child,
+    .admin-skin-super main .card.p-4 > h3:first-child {
+        @apply from-slate-100 to-slate-50 border-slate-200 text-slate-900;
+    }
+    .admin-skin-super .admin-table-card-header {
+        @apply bg-slate-200 border-slate-300;
+    }
+    .admin-skin-super .admin-table-card-title {
+        @apply text-slate-900;
+    }
+    .admin-skin-super .admin-table-filter-header {
+        @apply bg-slate-100 border-slate-200;
+    }
+    .admin-skin-super .admin-table-filter-title {
+        @apply text-slate-900;
+    }
+
+    /* Public / user account pages */
+    .user-page-shell .card {
+        @apply shadow-md border-l-4 border-l-emerald-500;
+    }
+    .user-page-hero {
+        @apply rounded-2xl overflow-hidden shadow-lg mb-6 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 text-white p-5 sm:p-6;
+    }
+
+    .user-compact-filter .form-input {
+        @apply min-h-0;
     }
 }
 
@@ -359,6 +652,37 @@
     .text-\[10px\],
     .text-xs {
         font-size: 10px !important;
+    }
+
+    /* User leaderboard / attendance — satu baris, font proporsional */
+    .user-page-shell .leaderboard-row,
+    .user-page-shell ol[aria-label="Daftar peringkat kehadiran"] li {
+        min-height: 2.75rem;
+    }
+
+    .user-page-shell .user-compact-filter .card-body {
+        padding: 0.75rem !important;
+    }
+
+    .user-page-shell .user-compact-filter .form-input,
+    .user-page-shell .user-compact-filter .btn-primary {
+        min-height: 2.25rem;
+        padding-top: 0.375rem !important;
+        padding-bottom: 0.375rem !important;
+    }
+
+    .user-page-shell .rounded-2xl.bg-gradient-to-br h1 {
+        font-size: 1.25rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .user-page-shell .rounded-2xl.bg-gradient-to-br.p-4 {
+        padding: 1rem !important;
+    }
+
+    .user-page-shell .rounded-2xl.bg-gradient-to-br .text-2xl,
+    .user-page-shell .rounded-2xl.bg-gradient-to-br .text-3xl {
+        font-size: 1.35rem !important;
     }
 }
 

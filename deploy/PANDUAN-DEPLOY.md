@@ -1,5 +1,44 @@
 # Panduan Deploy MasjidNusa ke Hostinger
 
+## Rilis Check-in, Poin Kehadiran, dan Display Masjid
+
+Fitur baru default nonaktif: `activity_attendance`, `attendance_rewards`, dan
+`mosque_display`. Deploy kode tidak berarti izin mengaktifkan fitur produksi.
+
+1. Uji staging memakai DB setara produksi dan salinan data tersanitasi. Uji
+   request bersamaan untuk membuka absensi, check-in, dan finalisasi hadiah;
+   SQLite tidak membuktikan perilaku locking MySQL/MariaDB.
+2. Backup DB dan media, verifikasi pemulihan, serta catat versi kode/aset sebelum
+   migrasi. Skrip update tidak menyediakan backup atau rollback otomatis.
+3. Gunakan PHP server yang sesuai, jalankan migrasi additive, deploy kode dan
+   seluruh `public/build/` yang cocok dengan manifest. Jangan menjalankan
+   `migrate:fresh`, `db:wipe`, atau seeder global pada produksi.
+4. Jalankan `php artisan features:provision-attendance-display` bila perlu
+   menambahkan izin fitur pada peran yang sudah ada. Perintah idempoten ini
+   tidak mengganti izin lama dan tidak mengaktifkan modul. Berguna pula untuk
+   instalasi baru yang membuat peran setelah migrasi.
+5. Smoke test kegiatan publik, CRUD kegiatan, login/2FA, jadwal salat, dan donasi
+   dengan semua modul baru tetap nonaktif. Setelah persetujuan operator,
+   aktifkan `activity_attendance` melalui Super Admin pada satu kegiatan pilot;
+   Media IT masih harus mengaktifkan absensi pada kegiatan tersebut.
+6. Aktifkan `attendance_rewards` setelah pilot lulus. Modul ini juga memerlukan
+   `activity_attendance` aktif. Simulasikan cut-off di staging, bukan dengan
+   poin palsu atau hadiah final di produksi. Aktifkan `mosque_display` terpisah
+   setelah uji perangkat TV dan koneksi.
+7. Jika terjadi regresi, nonaktifkan modul baru lalu pulihkan kode/aset yang
+   kompatibel. Pertahankan tabel kehadiran dan snapshot hadiah; migrasi
+   kehadiran/hadiah menolak rollback destructive. Jangan memulihkan seluruh DB
+   dari backup tanpa keputusan insiden, karena transaksi baru dapat hilang.
+
+Pengujian lokal bila ada cache konfigurasi aplikasi: gunakan jalur cache
+terpisah yang tidak ada, misalnya
+`APP_CONFIG_CACHE=/tmp/masjid-tests-config.php php artisan test`. Tes harus
+memakai SQLite `:memory:`; jangan melewati pengaman `tests/TestCase.php`.
+
+Check-in awal hanya login dan tombol, bukan bukti hadir fisik. YouTube butuh
+internet dan autoplay mengikuti pembatasan browser. Tidak ada pembayaran
+hadiah otomatis atau penampilan identitas jamaah pada TV.
+
 Panduan ini untuk **pull/update kode dari GitHub ke server** tanpa salah pakai PHP versi lama.
 
 **Domain production:** https://masjid.nusasuite.id  

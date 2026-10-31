@@ -3,10 +3,11 @@
 @section('title', 'Notifikasi')
 
 @section('content')
-<div class="max-w-screen-xl mx-auto px-4 py-6">
+<div class="max-w-screen-xl mx-auto px-4 py-6 user-page-shell">
     <div class="max-w-lg mx-auto">
-        <div class="flex items-center justify-between mb-5">
-            <h1 class="text-xl font-bold text-gray-900">Notifikasi</h1>
+        <div class="user-page-hero mb-5">
+            <p class="text-xs font-bold uppercase tracking-wider text-white/75">Akun</p>
+            <h1 class="text-xl sm:text-2xl font-bold mt-1">Notifikasi</h1>
         </div>
 
         @forelse($notifications as $notif)

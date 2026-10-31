@@ -108,7 +108,7 @@
     </div>
 </form>
 
-<x-admin.table>
+<x-admin.table title="Log Audit">
     <thead>
         <tr>
             <th>Waktu</th>

@@ -2,12 +2,14 @@
 
 @php
 $classes = match($type) {
-    'success' => 'bg-emerald-100 text-emerald-800',
-    'warning', 'yellow', 'orange' => 'bg-amber-100 text-amber-800',
-    'danger' => 'bg-red-100 text-red-800',
-    'info', 'blue' => 'bg-blue-100 text-blue-800',
-    'purple' => 'bg-purple-100 text-purple-800',
-    default => 'bg-gray-100 text-gray-700',
+    'success' => 'bg-emerald-600 text-white ring-1 ring-emerald-700/20',
+    'warning', 'yellow', 'orange' => 'bg-amber-500 text-amber-950 ring-1 ring-amber-600/25',
+    'danger' => 'bg-red-600 text-white ring-1 ring-red-700/20',
+    'info', 'blue' => 'bg-blue-600 text-white ring-1 ring-blue-700/20',
+    'purple' => 'bg-purple-600 text-white ring-1 ring-purple-700/20',
+    'teal' => 'bg-teal-600 text-white ring-1 ring-teal-700/20',
+    'gray' => 'bg-slate-200 text-slate-800 ring-1 ring-slate-300/70',
+    default => 'bg-slate-200 text-slate-800 ring-1 ring-slate-300/70',
 };
 @endphp
 

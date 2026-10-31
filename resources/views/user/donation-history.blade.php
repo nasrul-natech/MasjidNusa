@@ -3,9 +3,12 @@
 @section('title', 'Riwayat Donasi')
 
 @section('content')
-<div class="max-w-screen-xl mx-auto px-4 py-6">
+<div class="max-w-screen-xl mx-auto px-4 py-6 user-page-shell">
     <div class="max-w-lg mx-auto">
-        <h1 class="text-xl font-bold text-gray-900 mb-5">Riwayat Donasi</h1>
+        <div class="user-page-hero mb-5">
+            <p class="text-xs font-bold uppercase tracking-wider text-white/75">Akun</p>
+            <h1 class="text-xl sm:text-2xl font-bold mt-1">Riwayat Donasi</h1>
+        </div>
 
         @forelse($donations as $donation)
         <div class="card p-4 mb-3">

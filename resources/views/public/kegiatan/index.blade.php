@@ -222,6 +222,7 @@
             <x-badge type="info" class="mb-1.5 text-[10px]">{{ $activity->category->name }}</x-badge>
             @endif
             <h3 class="text-sm font-bold text-gray-900 line-clamp-2">{{ $activity->title }}</h3>
+            @include('public.kegiatan.session-badge')
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
                 <span>📅 {{ $activity->start_date->locale('id')->isoFormat('D MMM Y') }}</span>
                 @if($activity->location)

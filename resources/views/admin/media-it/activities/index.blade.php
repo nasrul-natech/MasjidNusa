@@ -6,13 +6,13 @@
 @section('content')
 <div class="flex flex-wrap justify-between gap-3 mb-5">
     <div class="flex gap-2">
-        <a href="{{ route('admin.media-it.activities.index', ['filter' => 'upcoming']) }}" class="text-sm px-4 py-2 rounded-lg {{ $filter === 'upcoming' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200' }}">Mendatang</a>
+        <a href="{{ route('admin.media-it.activities.index', ['filter' => 'upcoming']) }}" class="text-sm px-4 py-2 rounded-lg {{ $filter === 'upcoming' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200' }}">{{ \App\Support\NewFeature::enabled('activity_attendance') ? 'Aktif & Mendatang' : 'Mendatang' }}</a>
         <a href="{{ route('admin.media-it.activities.index', ['filter' => 'past']) }}" class="text-sm px-4 py-2 rounded-lg {{ $filter === 'past' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200' }}">Lalu</a>
     </div>
     <a href="{{ route('admin.media-it.activities.create') }}" class="btn-primary">+ Tambah Kegiatan</a>
 </div>
 
-<x-admin.table>
+<x-admin.table title="Daftar Kegiatan">
     <thead>
         <tr>
             <th>Kegiatan</th>
@@ -32,6 +32,7 @@
                     @endif
                     <div>
                         <p class="font-medium text-sm">{{ $activity->title }}</p>
+                        @include('public.kegiatan.session-badge')
                         @if($activity->location)
                         <p class="text-xs text-gray-400">📍 {{ $activity->location }}</p>
                         @endif
@@ -46,6 +47,15 @@
             </td>
             <td data-label="Aksi">
                 <div class="action-group flex-wrap">
+                    @if(\App\Support\NewFeature::enabled('activity_attendance') && in_array($activity->attendance_phase, ['upcoming', 'ongoing']))
+                    @can('manage_activities')
+                    <form method="POST" action="{{ route('admin.media-it.activities.complete', $activity) }}" data-confirm="Selesaikan kegiatan dan buka check-in selama {{ $activity->attendanceSetting->duration_seconds / 60 }} menit? Jendela tidak dapat dibuka ulang."
+                        x-data="{phase: @js($activity->attendance_phase), wait: {{ max(0, now()->diffInMilliseconds($activity->start_date, false)) }}, mounted: Date.now(), timer: null, init() { if (this.phase === 'upcoming') this.timer = setInterval(() => { if (Date.now() - this.mounted &gt;= this.wait) { this.phase = 'ongoing'; clearInterval(this.timer); } }, 1000); }, destroy() { clearInterval(this.timer); }}"
+                        x-show="phase === 'ongoing'" x-cloak @activity-phase.window="if ($event.detail.id === {{ $activity->id }}) { phase = $event.detail.phase; if (phase !== 'upcoming') clearInterval(timer); }">
+                        @csrf<button type="submit" class="btn-action-green">Selesaikan &amp; Buka Check-in</button>
+                    </form>
+                    @endcan
+                    @endif
                     <a href="{{ route('admin.media-it.activities.edit', $activity->id) }}" class="btn-action-blue">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         Edit

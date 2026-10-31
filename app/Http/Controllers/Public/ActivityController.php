@@ -19,14 +19,24 @@ class ActivityController extends Controller
 
         if ($filter === 'past') {
             $query->where('start_date', '<', now())->orderByDesc('start_date');
+            if (\App\Support\NewFeature::enabled('activity_attendance')) {
+                $query->whereNotIn('id', Activity::published()->currentAgenda()->select('id'));
+            }
         } else {
-            $query->where('start_date', '>=', now()->startOfDay())->orderBy('start_date');
+            if (\App\Support\NewFeature::enabled('activity_attendance')) {
+                $query->currentAgenda()->orderByRaw('CASE WHEN start_date <= ? THEN 0 ELSE 1 END', [now()])->orderBy('start_date');
+            } else {
+                $query->where('start_date', '>=', now()->startOfDay())->orderBy('start_date');
+            }
         }
 
         if ($category) {
             $query->whereHas('category', fn($q) => $q->where('slug', $category));
         }
 
+        if (\App\Support\NewFeature::enabled('activity_attendance')) {
+            $query->with(['attendanceSetting', 'attendanceSession']);
+        }
         $activities = $query->paginate(9);
         $categories = ActivityCategory::all();
 
@@ -68,6 +78,11 @@ class ActivityController extends Controller
             ->limit(3)
             ->get();
 
-        return view('public.kegiatan.show', compact('activity', 'related'));
+        $response = response()->view('public.kegiatan.show', compact('activity', 'related'));
+        if (\App\Support\NewFeature::enabled('activity_attendance') && $activity->attendanceSetting?->enabled) {
+            $response->headers->set('Cache-Control', 'no-store, private');
+        }
+
+        return $response;
     }
 }
