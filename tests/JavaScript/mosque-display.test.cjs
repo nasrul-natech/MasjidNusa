@@ -188,6 +188,17 @@ test('player applies theme and bounded motion/ticker options without external au
     assert.equal(ticker[1].className, 'ticker-logo');
     assert.equal(ticker[1].src, '/storage/branding/logo.png');
     assert.equal(ticker[2].textContent, 'Kajian');
+    player.setFeed({...completeFeed(), activities: [{title: 'Kajian Subuh', starts_at: '2026-11-15T04:47:00+07:00'}]});
+    await player.listeners.online();
+    const headerDate = player.element('date').children;
+    assert.equal(headerDate.length, 2);
+    assert.match(headerDate[0].textContent, /Sabtu, 31 Oktober 2026/);
+    assert.equal(headerDate[1].className, 'date-hijri');
+    assert.match(headerDate[1].textContent, /1448 H/);
+    const activity = player.element('activities').children[0];
+    assert.equal(activity.children[0].textContent, 'Kajian Subuh');
+    assert.equal(activity.children[1].className, 'activity-when');
+    assert.match(activity.children[1].textContent, /15 Nov 2026/);
     const template = readFileSync(path.join(__dirname, '../../resources/views/mosque-display/screen.blade.php'), 'utf8');
     assert.match(template, /prefers-reduced-motion:reduce/);
     assert.match(template, /body\[data-mode=prayer\] #mode-title,body\[data-mode=prayer\] #mode-countdown,body\[data-mode=prayer\] #mode-note\{display:none\}/);

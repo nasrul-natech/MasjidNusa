@@ -41,7 +41,7 @@
         #logo{width:8vmin;height:8vmin;min-width:0;min-height:0;flex-shrink:0;border-radius:1.2vmin;padding:.5vmin}
         h1{font-size:1.35em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .header-time{align-self:center;justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:.1em;min-width:0;text-align:right}
-        #clock{font-variant-numeric:tabular-nums;font-size:clamp(1.35rem,7.4vmin,10vh);line-height:.95;font-weight:700;white-space:nowrap;color:var(--accent)}#date{font-size:.58em;margin-top:.12em;opacity:.88;line-height:1.2}#preview{font-size:.46em;font-weight:600;line-height:1.25;margin-top:.15em}
+        #clock{font-variant-numeric:tabular-nums;font-size:clamp(1.35rem,7.4vmin,10vh);line-height:.95;font-weight:700;white-space:nowrap;color:var(--accent)}#date{display:flex;align-items:center;flex-wrap:nowrap;gap:.45em;max-width:100%;margin-top:.12em;font-size:.52em;line-height:1.2;opacity:.92;white-space:nowrap;overflow:hidden}.date-gregorian{min-width:0;overflow:hidden;text-overflow:ellipsis}.date-hijri,.activity-when{flex:0 0 auto;padding:.14em .55em;border-radius:999px;font-weight:700;line-height:1.2;letter-spacing:.01em;color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,#ffffff14);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}body[data-theme=daylight] .date-hijri,body[data-theme=daylight] .activity-when{color:#0f172a;background:#fff;border-color:color-mix(in srgb,var(--accent) 40%,#94a3b8)}#preview{font-size:.46em;font-weight:600;line-height:1.25;margin-top:.15em}
         #connection{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         #body{gap:.55vmin;padding:.55vmin .9vmin 0;min-height:0}#media{container-type:size;border-radius:1.4vmin;min-width:0;background:#000}
         #media img{object-fit:contain;object-position:center;animation-name:slide-in}
@@ -51,7 +51,7 @@
             #media iframe{width:min(100cqw,177.7778cqh);height:min(100cqh,56.25cqw)}
             body[data-media-fit=cover] #media iframe{width:max(100cqw,177.7778cqh);height:max(100cqh,56.25cqw)}
         }
-        aside{padding:1.5vmin;border-radius:1.4vmin}
+        aside{padding:1.5vmin;border-radius:1.4vmin}#activities p{display:flex;flex-wrap:wrap;align-items:center;gap:.45em;margin:0 0 .85em;padding-bottom:.85em}#activities .activity-title{min-width:0;flex:1 1 7em}#activities .activity-when{font-size:.92em;white-space:nowrap}
         .footer-frame{position:relative;display:flex;flex-direction:column;overflow:hidden;height:auto;align-self:stretch;margin:0}
         footer{height:auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;border-radius:0;border:0;border-top:2px solid color-mix(in srgb,var(--accent) 75%,transparent);background:linear-gradient(118deg,var(--panel-edge),var(--panel))}
         .prayer-strip{padding:1.15vmin .75vmin .35vmin;flex:0 0 auto;min-height:0;display:flex;align-items:stretch;gap:0}

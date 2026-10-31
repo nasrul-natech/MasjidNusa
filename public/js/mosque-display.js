@@ -76,7 +76,7 @@
         if (!data) { confirmedSequence = null; setMode(previewPhase ? demoState() : {mode: 'normal'}); return; }
         const now = new Date(connected ? acceptedServer + monotonic() - acceptedAt : Date.now());
         byId('clock').textContent = connected ? new Intl.DateTimeFormat('id-ID', {timeZone: data.timezone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}).format(now) : '--:--:--';
-        byId('date').textContent = connected ? new Intl.DateTimeFormat('id-ID', {timeZone: data.timezone, dateStyle: 'full'}).format(now) : '';
+        renderHeaderDate(now);
         const today = localDate(now, data.timezone);
         const fresh = connected && today === data.prayer_date;
         const candidate = prayerState(data, now.getTime(), connected);
@@ -282,6 +282,31 @@
             rotation = setTimeout(play, 800);
         }
     }
+    const hijriMonthNames = {Muharam: 'Muharram', Safar: 'Safar', Rabiulawal: 'Rabiul Awal', Rabiulakhir: 'Rabiul Akhir', Jumadilawal: 'Jumadil Awal', Jumadilakhir: 'Jumadil Akhir', Rajab: 'Rajab', Syakban: 'Syakban', Ramadan: 'Ramadhan', Syawal: 'Syawwal', Zulkaidah: 'Dzulqaidah', Zulhijah: 'Dzulhijjah'};
+    function hijriLabel(date, timeZone) {
+        try {
+            const parts = new Intl.DateTimeFormat('id-ID', {timeZone, calendar: 'islamic-umalqura', day: 'numeric', month: 'long', year: 'numeric'}).formatToParts(date);
+            const value = type => parts.find(part => part.type === type)?.value || '';
+            const month = hijriMonthNames[value('month')] || value('month');
+            if (!value('day') || !month || !value('year')) return '';
+            return `${value('day')} ${month} ${value('year')} H`;
+        } catch { return ''; }
+    }
+    function renderHeaderDate(now) {
+        const box = byId('date');
+        if (!connected || !data) { box.textContent = ''; return; }
+        box.replaceChildren();
+        const gregorian = document.createElement('span');
+        gregorian.className = 'date-gregorian';
+        gregorian.textContent = new Intl.DateTimeFormat('id-ID', {timeZone: data.timezone, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}).format(now);
+        box.append(gregorian);
+        const hijri = hijriLabel(now, data.timezone);
+        if (!hijri) return;
+        const badge = document.createElement('span');
+        badge.className = 'date-hijri';
+        badge.textContent = hijri;
+        box.append(badge);
+    }
     function safeLogo(url) {
         return typeof url === 'string' && /^\/storage\/branding\/[A-Za-z0-9_-]+\.(?:png|jpe?g|webp|gif)$/.test(url) ? url : '/images/logo-masjidnusa.png';
     }
@@ -334,7 +359,13 @@
         byId('activities').replaceChildren();
         data.activities.forEach(activity => {
             const line = document.createElement('p');
-            line.textContent = `${activity.title} | ${new Intl.DateTimeFormat('id-ID', {timeZone: data.timezone, dateStyle: 'short', timeStyle: 'short'}).format(new Date(activity.starts_at))}`;
+            const title = document.createElement('span');
+            title.className = 'activity-title';
+            title.textContent = activity.title;
+            const when = document.createElement('span');
+            when.className = 'activity-when';
+            when.textContent = new Intl.DateTimeFormat('id-ID', {timeZone: data.timezone, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}).format(new Date(activity.starts_at));
+            line.append(title, when);
             byId('activities').append(line);
         });
         const previousMode = mode;
