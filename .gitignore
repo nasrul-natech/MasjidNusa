@@ -70,6 +70,8 @@ pnpm-debug.log
 # ── Cursor (local AI / debug) ───────────────────────────────────
 /.cursor/
 
+/.kilo/
+
 # ── Referensi lokal (tidak perlu di repo) ──────────────────────
 /0. referensi/
 

@@ -30,7 +30,7 @@
         body{font-size:clamp(9px,2.4vmin,30px)}
         main{width:100%;height:100dvh;padding:0;gap:0;grid-template-rows:auto minmax(0,1fr) auto}
         main>*{min-width:0;min-height:0}
-        header{align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,auto);align-items:start;gap:1.2vmin 1.5vmin;padding:.45vmin .9vmin .35vmin;margin:0;overflow:hidden;border-bottom:2px solid color-mix(in srgb,var(--accent) 75%,transparent);background:linear-gradient(118deg,var(--panel),var(--panel-edge));border-radius:0}
+        header{align-self:stretch;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,auto);align-items:center;gap:1.2vmin 1.5vmin;padding:1.15vmin .9vmin 1.15vmin;margin:0;overflow:hidden;border-bottom:2px solid color-mix(in srgb,var(--accent) 75%,transparent);background:linear-gradient(118deg,var(--panel),var(--panel-edge));border-radius:0}
         .identity{gap:1.6vmin;overflow:hidden;min-width:0;justify-self:start;align-self:center}
         .header-center{align-self:start;justify-self:center;min-width:0;max-width:min(46vw,28em);padding:.05vmin .5vmin 0;display:flex;flex-direction:column;align-items:center;gap:.18em}
         .status-badge{padding:.28em .75em;border-radius:.65vmin;font-size:.42em;font-weight:700;letter-spacing:.03em;line-height:1.2;border:1px solid color-mix(in srgb,var(--accent) 40%,#ffffff30);background:color-mix(in srgb,var(--glow) 22%,var(--base));color:#f7f7ee;max-width:100%}
@@ -44,7 +44,7 @@
         #clock{font-variant-numeric:tabular-nums;font-size:clamp(1.35rem,7.4vmin,10vh);line-height:.95;font-weight:700;white-space:nowrap;color:var(--accent)}#date{font-size:.58em;margin-top:.12em;opacity:.88;line-height:1.2}#preview{font-size:.46em;font-weight:600;line-height:1.25;margin-top:.15em}
         #connection{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         #body{gap:.55vmin;padding:.55vmin .9vmin 0;min-height:0}#media{container-type:size;border-radius:1.4vmin;min-width:0;background:#000}
-        #media img{object-fit:contain;animation-name:slide-in}
+        #media img{object-fit:contain;object-position:center;animation-name:slide-in}
         body[data-media-fit=cover] #media img{object-fit:cover}
         #media iframe{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;animation-name:video-in}
         @supports(width:1cqw){
@@ -54,7 +54,7 @@
         aside{padding:1.5vmin;border-radius:1.4vmin}
         .footer-frame{position:relative;display:flex;flex-direction:column;overflow:hidden;height:auto;align-self:stretch;margin:0}
         footer{height:auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;border-radius:0;border:0;border-top:2px solid color-mix(in srgb,var(--accent) 75%,transparent);background:linear-gradient(118deg,var(--panel-edge),var(--panel))}
-        .prayer-strip{padding:.35vmin .75vmin 0;flex:0 0 auto;min-height:0;display:flex;align-items:stretch;gap:0}
+        .prayer-strip{padding:1.15vmin .75vmin .35vmin;flex:0 0 auto;min-height:0;display:flex;align-items:stretch;gap:0}
         .prayer-label{flex:0 0 auto;width:min(10.5em,13vmin);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.12em;padding:.1vmin .45vmin;border-right:1px solid color-mix(in srgb,var(--accent) 25%,#ffffff28)}
         #prayer-heading{margin:0;font-size:.64em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);line-height:1.15}
         #prayer-location{margin:0;font-size:.54em;line-height:1.2;opacity:.88;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
@@ -68,9 +68,10 @@
         #prayers .upcoming{background:var(--accent);color:var(--base);box-shadow:inset 0 -.28vmin 0 color-mix(in srgb,var(--base) 35%,#000)}
         #prayers .upcoming span,#prayers .upcoming strong{color:inherit}
         #announcement-window{flex-shrink:0;margin-top:0;padding:.18em 0 0;font-size:1em;line-height:1.12;border-top:1px solid color-mix(in srgb,var(--accent) 20%,#ffffff1c)}
+        #announcement .ticker-logo{display:inline-block;height:1.05em;width:1.05em;margin:0 .75em;object-fit:contain;vertical-align:-.15em;border-radius:.22em;background:#ffffffeb;padding:.06em}
         body[data-announcement-size=normal] #announcement-window{font-size:.9em}body[data-announcement-size=extra] #announcement-window{font-size:1.3em}
         body[data-layout=immersive] main{padding:0;gap:0;position:relative;isolation:isolate}
-        body[data-layout=immersive] header{position:absolute;inset:0 1.1vmin auto;height:auto;z-index:2;padding:.35vmin 2vmin 0;border:1px solid color-mix(in srgb,var(--accent) 28%,#ffffff35);border-bottom:2px solid color-mix(in srgb,var(--accent) 75%,transparent);border-radius:0 0 1.8vmin 1.8vmin;background:linear-gradient(118deg,var(--panel),var(--panel-edge));pointer-events:none;text-shadow:0 2px 5px #000}
+        body[data-layout=immersive] header{position:absolute;inset:0 1.1vmin auto;height:auto;z-index:2;padding:1.15vmin 2vmin 1.15vmin;border:1px solid color-mix(in srgb,var(--accent) 28%,#ffffff35);border-bottom:2px solid color-mix(in srgb,var(--accent) 75%,transparent);border-radius:0 0 1.8vmin 1.8vmin;background:linear-gradient(118deg,var(--panel),var(--panel-edge));pointer-events:none;text-shadow:0 2px 5px #000}
         body[data-layout=immersive] .footer-frame{position:absolute;inset:auto 1.1vmin 0;height:auto;z-index:2;padding:0;background:none;overflow:visible;pointer-events:none;text-shadow:0 2px 5px #000}
         body[data-layout=immersive] footer{background:linear-gradient(118deg,var(--panel-edge),var(--panel));border:1px solid color-mix(in srgb,var(--accent) 28%,#ffffff35);border-top:2px solid color-mix(in srgb,var(--accent) 75%,transparent);border-radius:1.8vmin 1.8vmin 0 0}
         body[data-layout=immersive] aside{display:none}

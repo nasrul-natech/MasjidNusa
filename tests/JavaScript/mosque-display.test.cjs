@@ -180,6 +180,14 @@ test('player applies theme and bounded motion/ticker options without external au
     assert.equal(player.body.dataset.announcementSize, 'large');
     assert.equal(player.styles['--announcement-seconds'], '40s');
     assert.equal(player.styles['--transition-ms'], '800ms');
+    player.setFeed({...completeFeed(), announcements: ['Subuh', 'Kajian'], logo_url: '/storage/branding/logo.png'});
+    await player.listeners.online();
+    const ticker = player.element('announcement').children;
+    assert.equal(ticker.length, 3);
+    assert.equal(ticker[0].textContent, 'Subuh');
+    assert.equal(ticker[1].className, 'ticker-logo');
+    assert.equal(ticker[1].src, '/storage/branding/logo.png');
+    assert.equal(ticker[2].textContent, 'Kajian');
     const template = readFileSync(path.join(__dirname, '../../resources/views/mosque-display/screen.blade.php'), 'utf8');
     assert.match(template, /prefers-reduced-motion:reduce/);
     assert.match(template, /body\[data-mode=prayer\] #mode-title,body\[data-mode=prayer\] #mode-countdown,body\[data-mode=prayer\] #mode-note\{display:none\}/);

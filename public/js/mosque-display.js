@@ -282,6 +282,34 @@
             rotation = setTimeout(play, 800);
         }
     }
+    function safeLogo(url) {
+        return typeof url === 'string' && /^\/storage\/branding\/[A-Za-z0-9_-]+\.(?:png|jpe?g|webp|gif)$/.test(url) ? url : '/images/logo-masjidnusa.png';
+    }
+    function announcementLines(feed) {
+        const lines = Array.isArray(feed.announcements)
+            ? feed.announcements.filter(line => typeof line === 'string' && line.trim() !== '').map(line => line.trim()).slice(0, 8)
+            : [];
+        if (lines.length) return lines;
+        const single = typeof feed.announcement === 'string' ? feed.announcement.trim() : '';
+        return single ? [single] : [];
+    }
+    function renderAnnouncements(lines, logoSrc) {
+        const box = byId('announcement');
+        box.replaceChildren();
+        const shown = lines.length ? lines : ['Selamat datang'];
+        shown.forEach((line, index) => {
+            if (index > 0) {
+                const mark = document.createElement('img');
+                mark.className = 'ticker-logo';
+                mark.alt = '';
+                mark.src = logoSrc;
+                box.append(mark);
+            }
+            const text = document.createElement('span');
+            text.textContent = line;
+            box.append(text);
+        });
+    }
     function render(next, restart = false) {
         const signature = JSON.stringify([next.version, next.items]);
         data = next;
@@ -292,13 +320,14 @@
         document.body.style.setProperty('--transition-ms', `${bounded(data.transition_ms, 200, 2000, 800)}ms`);
         document.body.dataset.layout = ['focus', 'split', 'immersive'].includes(data.layout) ? data.layout : 'focus';
         document.body.dataset.mediaFit = data.media_fit === 'cover' ? 'cover' : 'contain';
+        const logoSrc = safeLogo(data.logo_url);
         const logo = byId('logo');
-        logo.src = typeof data.logo_url === 'string' && /^\/storage\/branding\/[A-Za-z0-9_-]+\.(?:png|jpe?g|webp|gif)$/.test(data.logo_url) ? data.logo_url : '/images/logo-masjidnusa.png';
+        logo.src = logoSrc;
         logo.onerror = () => { logo.onerror = null; logo.src = '/images/logo-masjidnusa.png'; };
         if (/^#[a-f0-9]{6}$/i.test(data.accent)) document.body.style.setProperty('--accent', data.accent);
         byId('title').textContent = data.title;
-        byId('announcement').textContent = data.announcement || 'Selamat datang';
-        byId('fallback').textContent = data.announcement || 'Selamat datang. Media belum tersedia.';
+        renderAnnouncements(announcementLines(data), logoSrc);
+        byId('fallback').textContent = announcementLines(data).join(' · ') || 'Selamat datang. Media belum tersedia.';
         byId('prayer-heading').textContent = 'Jadwal Salat';
         byId('prayer-location').textContent = data.prayer_location || '';
         byId('updated').textContent = data.published_at ? `Terbit: ${new Intl.DateTimeFormat('id-ID', {timeZone: data.timezone, dateStyle: 'short', timeStyle: 'short'}).format(new Date(data.published_at))}` : 'Draft';

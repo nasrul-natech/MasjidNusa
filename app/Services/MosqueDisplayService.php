@@ -22,18 +22,47 @@ class MosqueDisplayService
 {
     public const THEMES = ['emerald' => 'Zamrud', 'daylight' => 'Cerah (putih)', 'midnight' => 'Malam', 'sand' => 'Pasir', 'royal' => 'Safir', 'ocean' => 'Samudra', 'maroon' => 'Marun', 'olive' => 'Zaitun', 'slate' => 'Batu'];
 
-    /** Resolusi disarankan untuk layar TV; unggahan diperkecil otomatis ke 1920 px. */
-    public const PHOTO_RECOMMENDED = '1920×1080 (Full HD, 16:9)';
+    /**
+     * Kartu media di TV 1920×1080 tidak sama di tiap tata letak.
+     * Foto 16:9 yang dipaksakan ke kartu lebih lebar atau lebih sempit akan terpotong saat mode "Penuhi frame".
+     */
+    public const MEDIA_FRAMES = [
+        'focus' => [
+            'label' => 'Fokus media',
+            'width' => 1920,
+            'height' => 880,
+            'note' => 'Kartu selebar layar, di antara header dan jadwal. Lebih lebar dari 16:9.',
+            'youtube' => 'Video YouTube tetap 16:9 dan diletakkan utuh di tengah. Ada ruang kosong kiri-kanan agar bagian atas dan bawah tidak terpotong.',
+        ],
+        'split' => [
+            'label' => 'Media dan kegiatan',
+            'width' => 1420,
+            'height' => 860,
+            'note' => 'Kartu kiri saat panel kegiatan tampil. Lebih sempit dari Fokus media.',
+            'youtube' => 'Video 16:9 hampir pas. Sedikit ruang atas-bawah jika dipilih utuh. Tanpa kegiatan, kartu sama dengan Fokus media.',
+        ],
+        'immersive' => [
+            'label' => 'Layar penuh',
+            'width' => 1920,
+            'height' => 1080,
+            'note' => 'Seluruh layar 16:9. Header dan jadwal menimpa tepi atas dan bawah.',
+            'youtube' => 'Video 16:9 memenuhi layar. Jangan letakkan teks penting di tepi atas atau bawah.',
+        ],
+    ];
 
     public const PHOTO_STORED_MAX = 1920;
 
     public const PHOTO_UPLOAD_MAX_SIDE = 4096;
 
+    public const ANNOUNCEMENT_LIMIT = 8;
+
+    public const ANNOUNCEMENT_LENGTH = 280;
+
     public const DECORATIONS = ['none' => 'Tanpa ornamen', 'mosque' => 'Siluet Masjid', 'clouds' => 'Awan', 'ramadan' => 'Ramadan - Bulan & Lentera', 'qurban' => 'Idul Adha - Kubah & Geometri', 'desert' => 'Padang Pasir', 'stars' => 'Langit Berbintang'];
 
     public const DEFAULTS = [
         'title' => 'Display Masjid', 'theme' => 'emerald', 'accent' => '#c8a75b', 'layout' => 'focus',
-        'announcement' => '', 'prayer_location_id' => null, 'show_activities' => true, 'media_fit' => 'contain',
+        'announcement' => '', 'announcements' => [], 'prayer_location_id' => null, 'show_activities' => true, 'media_fit' => 'contain',
         'prayer_mode_enabled' => false, 'adhan_minutes' => 3, 'iqamah_minutes' => 10, 'prayer_minutes' => 15,
         'announcement_seconds' => 40, 'announcement_size' => 'large', 'transition_ms' => 800, 'decoration' => 'mosque',
     ];
@@ -202,7 +231,9 @@ class MosqueDisplayService
             'layout' => in_array($snapshot['layout'] ?? '', ['focus', 'split', 'immersive'], true) ? $snapshot['layout'] : 'focus',
             'media_fit' => in_array($snapshot['media_fit'], ['contain', 'cover'], true) ? $snapshot['media_fit'] : 'contain',
             'logo_url' => $this->logoUrl($snapshot['logo_url'] ?? ''),
-            'announcement' => $snapshot['announcement'], 'timezone' => $snapshot['timezone'],
+            'announcements' => $announcements = $this->announcementLines($snapshot),
+            'announcement' => implode('   ', $announcements),
+            'timezone' => $snapshot['timezone'],
             'prayer_mode_enabled' => (bool) $snapshot['prayer_mode_enabled'],
             'adhan_minutes' => (int) $snapshot['adhan_minutes'], 'iqamah_minutes' => (int) $snapshot['iqamah_minutes'], 'prayer_minutes' => (int) $snapshot['prayer_minutes'],
             'announcement_seconds' => (int) $snapshot['announcement_seconds'], 'announcement_size' => $snapshot['announcement_size'],
@@ -211,6 +242,32 @@ class MosqueDisplayService
             'prayers' => $prayers, 'next_prayer' => $nextPrayer, 'previous_prayer' => $previousPrayer,
             'items' => $items, 'activities' => array_values(array_filter($snapshot['activities'], fn ($activity) => CarbonImmutable::parse($activity['ends_at'] ?? $activity['starts_at'])->gte($now))),
         ];
+    }
+
+    public function announcementLines(array $snapshot): array
+    {
+        $lines = [];
+        foreach (is_array($snapshot['announcements'] ?? null) ? $snapshot['announcements'] : [] as $line) {
+            if (! is_string($line)) {
+                continue;
+            }
+            $line = trim(preg_replace('/\s+/u', ' ', $line) ?? '');
+            if ($line === '') {
+                continue;
+            }
+            $lines[] = mb_substr($line, 0, self::ANNOUNCEMENT_LENGTH);
+            if (count($lines) >= self::ANNOUNCEMENT_LIMIT) {
+                return $lines;
+            }
+        }
+        if ($lines === [] && is_string($snapshot['announcement'] ?? null)) {
+            $legacy = trim(preg_replace('/\s+/u', ' ', $snapshot['announcement']) ?? '');
+            if ($legacy !== '') {
+                $lines[] = mb_substr($legacy, 0, 2000);
+            }
+        }
+
+        return $lines;
     }
 
     private function prayersForDate(array $settings, CarbonImmutable $day): array

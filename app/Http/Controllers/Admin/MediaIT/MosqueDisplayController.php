@@ -28,6 +28,8 @@ class MosqueDisplayController extends Controller
             '_tab' => ['sometimes', 'required', Rule::in(['identity', 'layout', 'content', 'prayer'])],
             'title' => ['required', 'string', 'max:160'], 'theme' => ['required', Rule::in(array_keys(MosqueDisplayService::THEMES))],
             'accent' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/D'], 'announcement' => ['nullable', 'string', 'max:2000'],
+            'announcements' => ['nullable', 'array', 'max:'.MosqueDisplayService::ANNOUNCEMENT_LIMIT],
+            'announcements.*' => ['nullable', 'string', 'max:'.MosqueDisplayService::ANNOUNCEMENT_LENGTH],
             'layout' => ['sometimes', 'required', 'in:focus,split,immersive'],
             'media_fit' => ['sometimes', 'required', 'in:contain,cover'],
             'prayer_location_id' => ['nullable', 'integer', 'exists:prayer_locations,id'], 'show_activities' => ['nullable', 'boolean'],
@@ -42,7 +44,13 @@ class MosqueDisplayController extends Controller
         ]);
         $tab = $data['_tab'] ?? 'identity';
         unset($data['_tab']);
-        $data['announcement'] = $data['announcement'] ?? '';
+        if ($request->exists('announcements')) {
+            $data['announcements'] = $this->display->announcementLines(['announcements' => $data['announcements'] ?? []]);
+            $data['announcement'] = implode("\n", $data['announcements']);
+        } else {
+            $data['announcement'] = $data['announcement'] ?? '';
+            unset($data['announcements']);
+        }
         $data['prayer_location_id'] = $data['prayer_location_id'] ?? null;
         $data['show_activities'] = $request->boolean('show_activities');
         $this->display->locked(function ($profile) use ($data) {

@@ -8,6 +8,18 @@
     $tabs = ['identity' => 'Identitas', 'layout' => 'Tata Letak', 'media' => 'Media', 'content' => 'Konten', 'prayer' => 'Salat & Iqamah', 'publish' => 'Publikasi'];
     $tz = $locations->firstWhere('id', $draft['prayer_location_id'])?->timezone() ?? config('app.timezone');
     $mediaCount = $profile->items->count();
+    $announcementLines = old('announcements');
+    if (! is_array($announcementLines)) {
+        $announcementLines = is_array($draft['announcements'] ?? null) ? $draft['announcements'] : [];
+        $announcementLines = array_values(array_filter($announcementLines, fn ($line) => is_string($line) && trim($line) !== ''));
+        if ($announcementLines === [] && trim((string) ($draft['announcement'] ?? '')) !== '') {
+            $announcementLines = [trim((string) $draft['announcement'])];
+        }
+    }
+    if ($announcementLines === []) {
+        $announcementLines = [''];
+    }
+    $announcementLines = array_values(array_slice(array_map(fn ($line) => (string) $line, $announcementLines), 0, \App\Services\MosqueDisplayService::ANNOUNCEMENT_LIMIT));
 @endphp
 <div class="space-y-4 text-sm" x-data="{
     tabs: ['identity', 'layout', 'media', 'content', 'prayer', 'publish'],
@@ -81,7 +93,7 @@
             <div class="card-body">
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div><label for="tv-layout" class="form-label">Tata letak</label><select id="tv-layout" name="layout" class="form-input">@foreach(['focus' => 'Fokus media', 'split' => 'Media dan kegiatan', 'immersive' => 'Layar penuh'] as $key => $label)<option value="{{ $key }}" @selected(old('layout', $draft['layout']) === $key)>{{ $label }}</option>@endforeach</select></div>
-                    <div><label for="tv-media-fit" class="form-label">Ukuran foto / video</label><select id="tv-media-fit" name="media_fit" class="form-input"><option value="contain" @selected(old('media_fit', $draft['media_fit']) === 'contain')>Utuh, tanpa potongan</option><option value="cover" @selected(old('media_fit', $draft['media_fit']) === 'cover')>Penuhi frame</option></select></div>
+                    <div><label for="tv-media-fit" class="form-label">Ukuran foto / video</label><select id="tv-media-fit" name="media_fit" class="form-input"><option value="contain" @selected(old('media_fit', $draft['media_fit']) === 'contain')>Utuh, sesuai kartu</option><option value="cover" @selected(old('media_fit', $draft['media_fit']) === 'cover')>Penuhi kartu (boleh terpotong)</option></select><p class="mt-1 text-xs text-gray-500">Penuhi kartu memotong sisi yang tidak muat. Tiap tata letak punya rasio berbeda — lihat tab Media.</p></div>
                     <div><label for="tv-theme" class="form-label">Tema</label><select id="tv-theme" name="theme" class="form-input">@foreach(\App\Services\MosqueDisplayService::THEMES as $key => $label)<option value="{{ $key }}" @selected(old('theme', $draft['theme']) === $key)>{{ $label }}</option>@endforeach</select></div>
                     <div><label for="tv-accent" class="form-label">Warna aksen</label><input id="tv-accent" class="form-input h-12" type="color" name="accent" value="{{ old('accent', $draft['accent']) }}"></div>
                     <div><label for="tv-decoration" class="form-label">Dekorasi</label><select id="tv-decoration" class="form-input" name="decoration">@foreach(\App\Services\MosqueDisplayService::DECORATIONS as $key => $label)<option value="{{ $key }}" @selected(old('decoration', $draft['decoration']) === $key)>{{ $label }}</option>@endforeach</select></div>
@@ -96,7 +108,22 @@
             </div>
             <div class="card-body space-y-3">
                 <div><label for="tv-location" class="form-label">Lokasi jadwal salat</label><select id="tv-location" name="prayer_location_id" class="form-input"><option value="">Jadwal harian manual ({{ config('app.timezone') }})</option>@foreach($locations as $location)<option value="{{ $location->id }}" @selected(old('prayer_location_id', $draft['prayer_location_id']) == $location->id)>{{ $location->full_name }} ({{ $location->timezone() }})</option>@endforeach</select></div>
-                <div><label for="tv-announcement" class="form-label">Pengumuman teks</label><textarea id="tv-announcement" class="form-input" name="announcement" maxlength="2000" rows="3">{{ old('announcement', $draft['announcement']) }}</textarea></div>
+                <div class="space-y-3" x-data="{ lines: @js(collect($announcementLines)->map(fn ($text, $index) => ['id' => $index + 1, 'text' => $text])->values()), nextId: {{ count($announcementLines) + 1 }}, limit: {{ \App\Services\MosqueDisplayService::ANNOUNCEMENT_LIMIT }} }">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="form-label mb-0">Pengumuman teks</p>
+                        <button type="button" class="btn-secondary" @click="if (lines.length < limit) lines.push({ id: nextId++, text: '' })" :disabled="lines.length >= limit">Tambah pengumuman</button>
+                    </div>
+                    <p class="text-xs text-gray-500">Bisa lebih dari satu. Di TV teks berjalan berurutan, dan tiap pengumuman dipisah ikon logo masjid.</p>
+                    <template x-for="(line, index) in lines" :key="line.id">
+                        <div class="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+                            <div class="mb-1 flex items-center justify-between gap-2">
+                                <label class="text-xs font-semibold text-amber-950" :for="'tv-announcement-' + line.id">Pengumuman <span x-text="index + 1"></span></label>
+                                <button type="button" class="text-xs font-semibold text-red-600 hover:text-red-800" x-show="lines.length > 1" @click="lines.splice(index, 1)">Hapus</button>
+                            </div>
+                            <textarea class="form-input bg-white" rows="2" maxlength="{{ \App\Services\MosqueDisplayService::ANNOUNCEMENT_LENGTH }}" :id="'tv-announcement-' + line.id" :name="'announcements[' + index + ']'" x-model="line.text" :placeholder="index === 0 ? 'Contoh: Kajian subuh besok setelah salat' : 'Pengumuman berikutnya'"></textarea>
+                        </div>
+                    </template>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div class="min-w-0"><label for="tv-announcement-seconds" class="form-label">Putaran (detik)</label><input id="tv-announcement-seconds" class="form-input px-2 py-2" type="number" name="announcement_seconds" min="10" max="180" step="1" required value="{{ old('announcement_seconds', $draft['announcement_seconds']) }}"></div>
                     <div class="min-w-0"><label for="tv-announcement-size" class="form-label">Ukuran teks</label><select id="tv-announcement-size" class="form-input px-2 py-2" name="announcement_size">@foreach(['normal' => 'Normal', 'large' => 'Besar', 'extra' => 'Ekstra besar'] as $key => $label)<option value="{{ $key }}" @selected(old('announcement_size', $draft['announcement_size']) === $key)>{{ $label }}</option>@endforeach</select></div>
@@ -137,8 +164,26 @@
                     <x-badge type="danger">YouTube senyap</x-badge>
                 </div>
             </div>
-            <div class="card-body border-t border-gray-100 text-gray-600 leading-relaxed">
-                <p><strong class="text-gray-800">Resolusi foto untuk TV:</strong> disarankan {{ \App\Services\MosqueDisplayService::PHOTO_RECOMMENDED }} agar proporsional di layar lebar. Unggahan boleh hingga {{ \App\Services\MosqueDisplayService::PHOTO_UPLOAD_MAX_SIDE }} px per sisi (maks. 12 megapiksel, maks. 5 MB); sistem menyimpan hingga {{ \App\Services\MosqueDisplayService::PHOTO_STORED_MAX }} px. Video YouTube ideal 1080p (1920×1080).</p>
+            <div class="card-body border-t border-gray-100 text-gray-600 leading-relaxed space-y-3">
+                @php
+                    $mediaFrames = \App\Services\MosqueDisplayService::MEDIA_FRAMES;
+                    $activeLayout = $draft['layout'] ?? 'focus';
+                @endphp
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900">Petunjuk resolusi foto dan YouTube</h3>
+                    <p class="mt-1">Kartu media di TV berbeda di tiap tata letak. Foto yang sama (misalnya 16:9) akan <strong class="text-gray-800">terpotong</strong> jika dipaksakan mengisi kartu yang lebih lebar atau lebih sempit. Unggah sesuai tata letak yang sedang dipakai. Batas unggah {{ \App\Services\MosqueDisplayService::PHOTO_UPLOAD_MAX_SIDE }} px per sisi (maks. 12 megapiksel, 5 MB); sistem menyimpan hingga {{ \App\Services\MosqueDisplayService::PHOTO_STORED_MAX }} px tanpa mengubah rasio.</p>
+                </div>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    @foreach($mediaFrames as $key => $frame)
+                        <div class="rounded-xl border p-3 {{ $activeLayout === $key ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-gray-50' }}">
+                            <p class="text-xs font-bold uppercase tracking-wide {{ $activeLayout === $key ? 'text-emerald-800' : 'text-gray-500' }}">{{ $frame['label'] }}@if($activeLayout === $key) · sedang dipakai @endif</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-900">{{ $frame['width'] }}×{{ $frame['height'] }}</p>
+                            <div class="mt-2 overflow-hidden rounded-md bg-gray-900" style="aspect-ratio: {{ $frame['width'] }} / {{ $frame['height'] }}; max-height: 4.5rem;"></div>
+                            <p class="mt-2 text-xs leading-relaxed">{{ $frame['note'] }}</p>
+                            <p class="mt-1 text-xs leading-relaxed text-gray-500">{{ $frame['youtube'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
         @forelse($profile->items as $item)
@@ -152,7 +197,10 @@
                     <x-badge :type="$item->is_active ? 'success' : 'gray'">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</x-badge>
                 </div>
                 <div class="card-body space-y-3 p-4">
-                    @if($item->photo)<img src="{{ route('admin.media-it.mosque-display.photo', $item->photo) }}" alt="{{ $item->title }}" class="max-h-32 w-full rounded-xl object-cover">@endif
+                    @if($item->photo)
+                        @php $previewFrame = \App\Services\MosqueDisplayService::MEDIA_FRAMES[$draft['layout'] ?? 'focus'] ?? \App\Services\MosqueDisplayService::MEDIA_FRAMES['focus']; @endphp
+                        <img src="{{ route('admin.media-it.mosque-display.photo', $item->photo) }}" alt="{{ $item->title }}" class="w-full rounded-xl bg-gray-900 object-contain" style="aspect-ratio: {{ $previewFrame['width'] }} / {{ $previewFrame['height'] }}; max-height: 10rem;">
+                    @endif
                     <form method="POST" action="{{ route('admin.media-it.mosque-display.items.update', $item) }}" class="space-y-3">
                         <input type="hidden" name="_tab" value="media">
                         @csrf
@@ -190,8 +238,8 @@
                 <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <div class="min-w-0 lg:col-span-2"><label for="tv-new-type" class="form-label">Jenis</label><select id="tv-new-type" name="type" class="form-input px-2 py-2"><option value="photo">Foto</option><option value="youtube">YouTube</option></select></div>
                     <div class="min-w-0 lg:col-span-2"><label for="tv-new-title" class="form-label">Judul</label><input id="tv-new-title" name="title" required maxlength="160" class="form-input px-2 py-2"></div>
-                    <div class="min-w-0 rounded-xl border border-blue-100 bg-blue-50 p-3 lg:col-span-2"><label for="tv-new-photo" class="form-label">Foto</label><input id="tv-new-photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="form-input bg-white px-2 py-2" aria-describedby="tv-photo-resolution-help"><p id="tv-photo-resolution-help" class="mt-1 text-gray-500">Ideal {{ \App\Services\MosqueDisplayService::PHOTO_RECOMMENDED }}; maks. {{ \App\Services\MosqueDisplayService::PHOTO_UPLOAD_MAX_SIDE }} px, disimpan {{ \App\Services\MosqueDisplayService::PHOTO_STORED_MAX }} px.</p></div>
-                    <div class="min-w-0 rounded-xl border border-gray-200 bg-red-50 p-3 lg:col-span-2"><label for="tv-new-youtube" class="form-label">URL YouTube</label><input id="tv-new-youtube" type="url" name="youtube_url" maxlength="300" placeholder="https://www.youtube.com/watch?v=..." class="form-input bg-white px-2 py-2"></div>
+                    <div class="min-w-0 rounded-xl border border-blue-100 bg-blue-50 p-3 lg:col-span-2"><label for="tv-new-photo" class="form-label">Foto</label><input id="tv-new-photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="form-input bg-white px-2 py-2" aria-describedby="tv-photo-resolution-help"><p id="tv-photo-resolution-help" class="mt-1 text-gray-500">Sesuaikan rasio dengan tata letak di atas. Rasio asli dipertahankan; mode "Penuhi kartu" yang memotong.</p></div>
+                    <div class="min-w-0 rounded-xl border border-gray-200 bg-red-50 p-3 lg:col-span-2"><label for="tv-new-youtube" class="form-label">URL YouTube</label><input id="tv-new-youtube" type="url" name="youtube_url" maxlength="300" placeholder="https://www.youtube.com/watch?v=..." class="form-input bg-white px-2 py-2" aria-describedby="tv-youtube-resolution-help"><p id="tv-youtube-resolution-help" class="mt-1 text-gray-500">YouTube selalu 16:9 (ideal 1920×1080). Di Fokus media dan Media+kegiatan video ditampilkan utuh di dalam kartu, bukan dipotong mengikuti foto.</p></div>
                     <div class="min-w-0"><label for="tv-new-sort" class="form-label">Urutan</label><input id="tv-new-sort" name="sort_order" type="number" min="0" max="1000" value="0" required class="form-input px-2 py-2"></div>
                     <div class="min-w-0"><label for="tv-new-duration" class="form-label">Durasi (detik)</label><input id="tv-new-duration" name="duration_seconds" type="number" min="5" max="300" value="15" required class="form-input px-2 py-2"></div>
                     <div class="min-w-0"><label for="tv-new-start" class="form-label">Mulai</label><input id="tv-new-start" type="datetime-local" name="starts_at" class="form-input px-2 py-2"></div>
