@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
@@ -22,7 +21,7 @@ class ProfileController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'address' => ['nullable', 'string', 'max:500'],
+            'address' => ['nullable', 'string', 'max:255'],
             'gender' => ['nullable', 'in:L,P'],
             'birth_date' => ['nullable', 'date'],
             'avatar' => ['nullable', 'image', 'max:2048'],
@@ -38,8 +37,8 @@ class ProfileController extends Controller
             'birth_date' => $data['birth_date'],
         ];
 
-        if (!empty($data['password'])) {
-            if (empty($data['current_password']) || !Hash::check($data['current_password'], $user->password)) {
+        if (! empty($data['password'])) {
+            if (empty($data['current_password']) || ! Hash::check($data['current_password'], $user->password)) {
                 return back()->withErrors(['current_password' => 'Password saat ini wajib diisi dan harus sesuai.'])->withInput();
             }
             $update['password'] = $data['password'];

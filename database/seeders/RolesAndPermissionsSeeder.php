@@ -2,15 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Support\AttendanceFeaturePermissions;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permissions = [
             // Public
@@ -95,5 +97,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
         $superAdmin->syncPermissions(Permission::all());
+
+        AttendanceFeaturePermissions::provision();
     }
 }

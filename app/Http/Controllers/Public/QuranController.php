@@ -6,16 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\QuranBookmark;
 use App\Models\QuranKhatamProgram;
 use App\Models\QuranKhatamProgress;
-use App\Models\Surah;
+use App\Models\User;
 use App\Services\QuranService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class QuranController extends Controller
 {
-    public function __construct(private readonly QuranService $quranService)
-    {
-    }
+    public function __construct(private readonly QuranService $quranService) {}
 
     public function index(Request $request)
     {
@@ -57,7 +56,7 @@ class QuranController extends Controller
     public function surah(int $number)
     {
         $surah = $this->quranService->getSurah($number);
-        if (!$surah) {
+        if (! $surah) {
             abort(404);
         }
 
@@ -67,9 +66,9 @@ class QuranController extends Controller
 
         $pageMetaMap = $pageGroups->map(fn ($pageVerses) => [
             'surah_number' => $surah->number,
-            'verse_from'   => $pageVerses->first()->verse_number,
-            'verse_to'     => $pageVerses->last()->verse_number,
-            'juz_number'   => $pageVerses->first()->juz_number,
+            'verse_from' => $pageVerses->first()->verse_number,
+            'verse_to' => $pageVerses->last()->verse_number,
+            'juz_number' => $pageVerses->first()->juz_number,
         ]);
 
         $prevSurah = $number > 1 ? $this->quranService->getSurah($number - 1) : null;
@@ -108,9 +107,9 @@ class QuranController extends Controller
 
         $pageMetaMap = $pageGroups->map(fn ($pageVerses) => [
             'surah_number' => $pageVerses->first()->surah->number,
-            'verse_from'   => $pageVerses->first()->verse_number,
-            'verse_to'     => $pageVerses->last()->verse_number,
-            'juz_number'   => $pageVerses->first()->juz_number,
+            'verse_from' => $pageVerses->first()->verse_number,
+            'verse_to' => $pageVerses->last()->verse_number,
+            'juz_number' => $pageVerses->first()->juz_number,
         ]);
 
         $bookmarkedVerses = [];
@@ -119,7 +118,7 @@ class QuranController extends Controller
             $bookmarkedVerses = Auth::user()->quranBookmarks()
                 ->where('is_last_read', false)
                 ->get()
-                ->map(fn ($b) => $b->surah_id . ':' . $b->verse_number)
+                ->map(fn ($b) => $b->surah_id.':'.$b->verse_number)
                 ->toArray();
 
             $activeKhatam = Auth::user()->khatamPrograms()
@@ -136,7 +135,7 @@ class QuranController extends Controller
     public function verse(int $surahNumber, int $verseNumber)
     {
         $verse = $this->quranService->getVerse($surahNumber, $verseNumber);
-        if (!$verse) {
+        if (! $verse) {
             abort(404);
         }
 
@@ -182,27 +181,31 @@ class QuranController extends Controller
             'label' => 'nullable|string|max:100',
         ]);
 
-        $user = Auth::user();
-        $existing = $user->quranBookmarks()
-            ->where('surah_id', $request->surah_id)
-            ->where('verse_number', $request->verse_number)
-            ->where('is_last_read', false)
-            ->first();
+        return DB::transaction(function () use ($request) {
+            $user = User::whereKey(Auth::id())->lockForUpdate()->firstOrFail();
+            $existing = $user->quranBookmarks()
+                ->where('surah_id', $request->surah_id)
+                ->where('verse_number', $request->verse_number)
+                ->where('is_last_read', false)
+                ->lockForUpdate()
+                ->first();
 
-        if ($existing) {
-            $existing->delete();
-            return response()->json(['bookmarked' => false]);
-        }
+            if ($existing) {
+                $existing->delete();
 
-        QuranBookmark::create([
-            'user_id' => $user->id,
-            'surah_id' => $request->surah_id,
-            'verse_number' => $request->verse_number,
-            'label' => $request->label,
-            'is_last_read' => false,
-        ]);
+                return response()->json(['bookmarked' => false]);
+            }
 
-        return response()->json(['bookmarked' => true]);
+            QuranBookmark::create([
+                'user_id' => $user->id,
+                'surah_id' => $request->surah_id,
+                'verse_number' => $request->verse_number,
+                'label' => $request->label,
+                'is_last_read' => false,
+            ]);
+
+            return response()->json(['bookmarked' => true]);
+        });
     }
 
     public function setLastRead(Request $request)
@@ -212,24 +215,26 @@ class QuranController extends Controller
             'verse_number' => 'required|integer|min:1',
         ]);
 
-        $user = Auth::user();
+        return DB::transaction(function () use ($request) {
+            $user = User::whereKey(Auth::id())->lockForUpdate()->firstOrFail();
 
-        $user->quranBookmarks()->where('is_last_read', true)->delete();
+            $user->quranBookmarks()->where('is_last_read', true)->delete();
 
-        QuranBookmark::create([
-            'user_id' => $user->id,
-            'surah_id' => $request->surah_id,
-            'verse_number' => $request->verse_number,
-            'is_last_read' => true,
-        ]);
+            QuranBookmark::create([
+                'user_id' => $user->id,
+                'surah_id' => $request->surah_id,
+                'verse_number' => $request->verse_number,
+                'is_last_read' => true,
+            ]);
 
-        return response()->json(['success' => true]);
+            return response()->json(['success' => true]);
+        });
     }
 
     public function khatamIndex()
     {
         $programs = Auth::user()->khatamPrograms()
-            ->with(['progress' => fn($q) => $q->orderByDesc('read_date')->limit(7)])
+            ->with(['progress' => fn ($q) => $q->orderByDesc('read_date')->limit(7)])
             ->latest()
             ->get();
 
@@ -265,7 +270,7 @@ class QuranController extends Controller
     public function khatamShow(int $id)
     {
         $program = Auth::user()->khatamPrograms()
-            ->with(['progress' => fn($q) => $q->orderByDesc('read_date')])
+            ->with(['progress' => fn ($q) => $q->orderByDesc('read_date')])
             ->findOrFail($id);
 
         $surahs = $this->quranService->getSurahList();
@@ -275,59 +280,64 @@ class QuranController extends Controller
 
     public function khatamProgress(Request $request, int $id)
     {
-        $program = Auth::user()->khatamPrograms()->findOrFail($id);
+        return DB::transaction(function () use ($request, $id) {
+            $program = Auth::user()->khatamPrograms()->lockForUpdate()->findOrFail($id);
 
-        if ($program->status !== 'active') {
-            return response()->json(['error' => 'Program sudah tidak aktif.'], 422);
-        }
+            if ($program->status !== 'active') {
+                return response()->json(['error' => 'Program sudah tidak aktif.'], 422);
+            }
 
-        $request->validate([
-            'surah_number' => 'required|integer|min:1|max:114',
-            'verse_from'   => 'required|integer|min:1',
-            'verse_to'     => 'required|integer|min:1|gte:verse_from',
-            'juz_number'   => 'required|integer|min:1|max:30',
-            'pages_read'   => 'required|integer|min:1|max:20',
-        ]);
+            $request->validate([
+                'surah_number' => 'required|integer|min:1|max:114',
+                'verse_from' => 'required|integer|min:1',
+                'verse_to' => 'required|integer|min:1|gte:verse_from',
+                'juz_number' => 'required|integer|min:1|max:30',
+                'pages_read' => 'required|integer|min:1|max:20',
+            ]);
 
-        $duplicate = QuranKhatamProgress::where('program_id', $program->id)
-            ->where('read_date', now()->toDateString())
-            ->where('surah_number', $request->surah_number)
-            ->where('verse_from', $request->verse_from)
-            ->where('verse_to', $request->verse_to)
-            ->exists();
+            $readDate = now()->toDateString();
+            $duplicate = $program->progress()
+                ->whereDate('read_date', $readDate)
+                ->where('surah_number', $request->surah_number)
+                ->where('verse_from', $request->verse_from)
+                ->where('verse_to', $request->verse_to)
+                ->lockForUpdate()
+                ->first();
 
-        if ($duplicate) {
-            $program = $program->fresh();
+            if (! $duplicate) {
+                QuranKhatamProgress::create([
+                    'program_id' => $program->id,
+                    'surah_number' => $request->surah_number,
+                    'verse_from' => $request->verse_from,
+                    'verse_to' => $request->verse_to,
+                    'juz_number' => $request->juz_number,
+                    'pages_read' => $request->pages_read,
+                    'read_date' => $readDate,
+                ]);
+            }
+
+            // Locking reads avoid stale MySQL repeatable-read snapshots after waiting.
+            $totalPagesRead = (int) $program->progress()->lockForUpdate()->get()->sum('pages_read');
+            $progressPercent = min(100, round(($totalPagesRead / 604) * 100, 1));
+
+            if ($duplicate) {
+                return response()->json([
+                    'success' => true,
+                    'duplicate' => true,
+                    'progress_percent' => $progressPercent,
+                    'total_pages_read' => $totalPagesRead,
+                ]);
+            }
+
+            if ($totalPagesRead >= 604) {
+                $program->update(['status' => 'completed']);
+            }
 
             return response()->json([
-                'success'          => true,
-                'duplicate'        => true,
-                'progress_percent' => $program->progress_percent,
-                'total_pages_read' => $program->total_pages_read,
+                'success' => true,
+                'progress_percent' => $progressPercent,
+                'total_pages_read' => $totalPagesRead,
             ]);
-        }
-
-        QuranKhatamProgress::create([
-            'program_id' => $program->id,
-            'surah_number' => $request->surah_number,
-            'verse_from' => $request->verse_from,
-            'verse_to' => $request->verse_to,
-            'juz_number' => $request->juz_number,
-            'pages_read' => $request->pages_read,
-            'read_date' => now()->toDateString(),
-        ]);
-
-        $program = $program->fresh();
-
-        if ($program->total_pages_read >= 604) {
-            $program->update(['status' => 'completed']);
-            $program = $program->fresh();
-        }
-
-        return response()->json([
-            'success' => true,
-            'progress_percent' => $program->progress_percent,
-            'total_pages_read' => $program->total_pages_read,
-        ]);
+        });
     }
 }

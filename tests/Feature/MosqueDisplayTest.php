@@ -151,7 +151,7 @@ class MosqueDisplayTest extends TestCase
     {
         $this->admin();
         $this->get('/admin/media-it/mosque-display')->assertOk()->assertSee('Pengaturan TV')->assertSee('Tata Letak')->assertSee('Salin URL')->assertSee('Buka TV / Fullscreen');
-        $this->get('/admin/media-it/mosque-display/preview')->assertOk()->assertSee('PRATINJAU DRAFT');
+        $this->get('/admin/media-it/mosque-display/preview')->assertOk()->assertSee('Pratinjau draft');
         $this->get('/admin/media-it/mosque-display/preview-feed')->assertOk();
         $this->put('/admin/media-it/mosque-display', ['title' => 'X', 'theme' => 'evil', 'accent' => 'red;display:none'])->assertSessionHasErrors(['theme', 'accent']);
         $this->put('/admin/media-it/mosque-display', ['title' => 'X', 'theme' => 'emerald', 'accent' => '#112233', 'layout' => 'evil'])->assertSessionHasErrors('layout');
@@ -257,7 +257,7 @@ class MosqueDisplayTest extends TestCase
         }
     }
 
-    public function test_footer_only_has_five_prayers_with_midnight_safe_previous_and_next_timestamps(): void
+    public function test_footer_keeps_extra_times_but_prayer_timeline_only_uses_five_prayers(): void
     {
         $this->travelTo(Carbon::parse('2026-10-31 00:05:00', 'Asia/Jakarta'));
         $location = PrayerLocation::create(['province_id' => 1, 'city_id' => 1, 'province_name' => 'Jakarta', 'city_name' => 'Jakarta']);
@@ -353,7 +353,7 @@ class MosqueDisplayTest extends TestCase
     {
         $this->admin();
         $this->service->publish();
-        foreach (array_keys(\App\Services\MosqueDisplayService::DECORATIONS) as $decoration) {
+        foreach (array_keys(MosqueDisplayService::DECORATIONS) as $decoration) {
             $this->put('/admin/media-it/mosque-display', ['title' => 'TV', 'theme' => 'emerald', 'accent' => '#112233', 'decoration' => $decoration, '_tab' => 'layout'])
                 ->assertSessionHasNoErrors()->assertRedirect(route('admin.media-it.mosque-display.index').'#layout');
             $this->get('/admin/media-it/mosque-display/preview-feed')->assertJsonPath('decoration', $decoration)->assertJsonPath('prayer_mode_enabled', false);

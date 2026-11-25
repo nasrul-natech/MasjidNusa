@@ -106,7 +106,7 @@ class JamaahAttendanceLeaderboardTest extends TestCase
             ->assertDontSee('<script>name</script>', false)
             ->assertDontSee($first->email)->assertDontSee($first->phone ?? 'never-render-phone')
             ->assertDontSee('Hidden inactive')->assertDontSee('Hidden admin')
-            ->assertSee('sesama jamaah yang sudah masuk')->assertSee('tidak ditampilkan di TV publik');
+            ->assertSee('sesama jamaah yang login')->assertSee('Tidak ditampilkan di TV publik');
     }
 
     public function test_pagination_keeps_absolute_rank_and_own_rank_off_page(): void

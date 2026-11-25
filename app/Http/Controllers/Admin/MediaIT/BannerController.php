@@ -12,12 +12,14 @@ class BannerController extends Controller
     public function index()
     {
         $banners = Banner::orderBy('sort_order')->paginate(15);
+
         return view('admin.media-it.banners.index', compact('banners'));
     }
 
     public function create()
     {
         $banner = null;
+
         return view('admin.media-it.banners.form', compact('banner'));
     }
 
@@ -25,7 +27,7 @@ class BannerController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'link' => ['nullable', 'string'],
+            'link' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['integer'],
             'display_type' => ['required', 'in:all,desktop,mobile'],
             'is_active' => ['boolean'],
@@ -36,6 +38,7 @@ class BannerController extends Controller
 
         $data['image'] = $request->file('image')->store('banners', 'public');
         Banner::create($data);
+
         return redirect()->route('admin.media-it.banners.index')->with('success', 'Banner berhasil ditambahkan.');
     }
 
@@ -48,7 +51,7 @@ class BannerController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'link' => ['nullable', 'string'],
+            'link' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['integer'],
             'display_type' => ['required', 'in:all,desktop,mobile'],
             'is_active' => ['boolean'],
@@ -65,6 +68,7 @@ class BannerController extends Controller
         }
 
         $banner->update($data);
+
         return redirect()->route('admin.media-it.banners.index')->with('success', 'Banner diperbarui.');
     }
 
@@ -74,6 +78,7 @@ class BannerController extends Controller
             Storage::disk('public')->delete($banner->image);
         }
         $banner->delete();
+
         return back()->with('success', 'Banner dihapus.');
     }
 }

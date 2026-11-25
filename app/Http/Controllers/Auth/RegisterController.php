@@ -33,8 +33,8 @@ class RegisterController extends Controller
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'password' => Hash::make($data['password']),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $user->assignRole('jamaah');
 
@@ -47,6 +47,6 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        return redirect('/')->with('success', 'Akun berhasil dibuat. Selamat datang, ' . $user->name . '!');
+        return redirect('/')->with('success', 'Akun berhasil dibuat. Selamat datang, '.$user->name.'!');
     }
 }

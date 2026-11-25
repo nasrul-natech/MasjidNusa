@@ -89,4 +89,18 @@ class BrandingServiceTest extends TestCase
         $response->assertHeader('Content-Type', 'application/manifest+json');
         $response->assertJsonFragment(['name' => 'MasjidNusa']);
     }
+
+    public function test_custom_mosque_identity_keeps_platform_credit_on_public_footer(): void
+    {
+        Setting::create(['key' => 'app_name', 'value' => 'Masjid Al-Ikhlas', 'group' => 'branding']);
+        Setting::create(['key' => 'mosque_name', 'value' => 'Masjid Al-Ikhlas', 'group' => 'general']);
+        Setting::create(['key' => 'logo_path', 'value' => 'branding/custom-logo.png', 'group' => 'branding']);
+        BrandingService::clearCache();
+
+        $this->get(route('info-sistem'))->assertOk()
+            ->assertSee('Masjid Al-Ikhlas')
+            ->assertSee('MasjidNusa by natech.id')
+            ->assertSee('href="https://natech.id"', false);
+        $this->assertStringContainsString('branding/custom-logo.png', app(BrandingService::class)->logoUrl());
+    }
 }

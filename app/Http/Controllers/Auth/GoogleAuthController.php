@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\RememberLogin;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -21,10 +22,10 @@ class GoogleAuthController extends Controller
     {
         if ($request->query('intent') === 'link') {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return redirect()->route('login');
             }
-            if (!$user->isJamaah()) {
+            if (! $user->isJamaah()) {
                 return redirect()->route('user.profile')->with('error', 'Akun admin tidak dapat ditautkan ke Google.');
             }
             $request->session()->put('google.link', $user->id);
@@ -48,7 +49,7 @@ class GoogleAuthController extends Controller
                 ->with('error', 'Login Google gagal. Silakan coba lagi.');
         }
 
-        if (!$googleUser->getEmail()) {
+        if (! $googleUser->getEmail()) {
             return redirect()->route('login')
                 ->with('error', 'Akun Google tidak memiliki email. Gunakan akun Gmail lain.');
         }
@@ -60,7 +61,7 @@ class GoogleAuthController extends Controller
 
         $byGoogle = User::where('google_id', $googleUser->getId())->first();
         if ($byGoogle) {
-            if (!$byGoogle->isJamaah()) {
+            if (! $byGoogle->isJamaah()) {
                 AuditLog::record('user.google_login_blocked', $byGoogle, [], [
                     'reason' => 'admin_account',
                 ]);
@@ -69,14 +70,14 @@ class GoogleAuthController extends Controller
                     ->with('error', 'Akun admin harus login dengan email/password dan verifikasi 2FA.');
             }
 
-            if (!$byGoogle->is_active) {
+            if (! $byGoogle->is_active) {
                 return redirect()->route('login')
                     ->with('error', 'Akun Anda tidak aktif. Hubungi administrator.');
             }
 
             $email = $googleUser->getEmail();
             $emailTaken = User::where('email', $email)->whereKeyNot($byGoogle->id)->exists();
-            if (!$emailTaken && strcasecmp($byGoogle->email, $email) !== 0) {
+            if (! $emailTaken && strcasecmp($byGoogle->email, $email) !== 0) {
                 $byGoogle->email = $email;
             }
             if ($avatar = $this->storeAvatar($googleUser->getAvatar())) {
@@ -89,7 +90,7 @@ class GoogleAuthController extends Controller
 
         $existingUser = User::where('email', $googleUser->getEmail())->first();
 
-        if ($existingUser && !$existingUser->isJamaah()) {
+        if ($existingUser && ! $existingUser->isJamaah()) {
             AuditLog::record('user.google_login_blocked', $existingUser, [], [
                 'reason' => 'admin_account',
             ]);
@@ -99,7 +100,7 @@ class GoogleAuthController extends Controller
         }
 
         if ($existingUser) {
-            if (!$existingUser->is_active) {
+            if (! $existingUser->is_active) {
                 return redirect()->route('login')
                     ->with('error', 'Akun Anda tidak aktif. Hubungi administrator.');
             }
@@ -117,9 +118,9 @@ class GoogleAuthController extends Controller
             'google_id' => $googleUser->getId(),
             'avatar' => $this->storeAvatar($googleUser->getAvatar()),
             'password' => Hash::make(Str::random(64)),
-            'email_verified_at' => now(),
             'is_active' => true,
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $user->assignRole('jamaah');
         AuditLog::record('user.registered_google', $user);
@@ -133,15 +134,15 @@ class GoogleAuthController extends Controller
         return $this->loginGoogleUser($request, $user, true);
     }
 
-    private function linkAuthenticatedAccount(Request $request, $googleUser): ?\Illuminate\Http\RedirectResponse
+    private function linkAuthenticatedAccount(Request $request, $googleUser): ?RedirectResponse
     {
         $linkId = $request->session()->pull('google.link');
-        if (!$linkId) {
+        if (! $linkId) {
             return null;
         }
 
         $account = $request->user();
-        if (!$account || (int) $account->id !== (int) $linkId || !$account->isJamaah()) {
+        if (! $account || (int) $account->id !== (int) $linkId || ! $account->isJamaah()) {
             return redirect()->route('login')->with('error', 'Penautan Google dibatalkan. Masuk lagi lalu coba dari profil.');
         }
 
@@ -156,7 +157,7 @@ class GoogleAuthController extends Controller
         return redirect()->route('user.profile')->with('success', 'Akun Google berhasil ditautkan.');
     }
 
-    private function loginGoogleUser(Request $request, User $user, bool $isNewUser): \Illuminate\Http\RedirectResponse
+    private function loginGoogleUser(Request $request, User $user, bool $isNewUser): RedirectResponse
     {
         RememberLogin::start(true);
         Auth::login($user, true);
@@ -168,25 +169,25 @@ class GoogleAuthController extends Controller
         $redirect = $this->safeInternalPath($request->session()->pull('google.redirect', '/'));
 
         $message = $isNewUser
-            ? 'Akun berhasil dibuat. Selamat datang, ' . $user->name . '!'
-            : 'Selamat datang kembali, ' . $user->name . '!';
+            ? 'Akun berhasil dibuat. Selamat datang, '.$user->name.'!'
+            : 'Selamat datang kembali, '.$user->name.'!';
 
         return redirect($redirect)->with('success', $message);
     }
 
     protected function storeAvatar(?string $url): ?string
     {
-        if (!$url) {
+        if (! $url) {
             return null;
         }
 
         try {
             $response = Http::timeout(5)->get($url);
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
-            $path = 'avatars/google/' . Str::uuid() . '.jpg';
+            $path = 'avatars/google/'.Str::uuid().'.jpg';
             Storage::disk('public')->put($path, $response->body());
 
             return $path;
@@ -199,7 +200,7 @@ class GoogleAuthController extends Controller
     {
         $redirect = $redirect ?: '/';
 
-        if (!str_starts_with($redirect, '/') || str_starts_with($redirect, '//') || str_contains($redirect, '\\') || str_contains($redirect, ':')) {
+        if (! str_starts_with($redirect, '/') || str_starts_with($redirect, '//') || str_contains($redirect, '\\') || str_contains($redirect, ':')) {
             return '/';
         }
 

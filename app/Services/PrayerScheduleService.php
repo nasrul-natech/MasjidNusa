@@ -4,14 +4,14 @@ namespace App\Services;
 
 use App\Models\PrayerLocation;
 use App\Models\PrayerTime;
-use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class PrayerScheduleService
 {
     private const BASE_URL = 'https://api.aladhan.com/v1';
+
     private const TIMEOUT = 30;
 
     /**
@@ -26,22 +26,22 @@ class PrayerScheduleService
      */
     public function fetchAndSave(PrayerLocation $location, int $month, int $year): int
     {
-        if (!$location->latitude || !$location->longitude) {
+        if (! $location->latitude || ! $location->longitude) {
             throw new \RuntimeException(
                 "Lokasi {$location->city_name} belum memiliki koordinat (latitude/longitude). "
-                . "Silakan edit lokasi dan isi koordinatnya."
+                .'Silakan edit lokasi dan isi koordinatnya.'
             );
         }
 
         $response = Http::timeout(self::TIMEOUT)
             ->withHeaders(['Accept' => 'application/json'])
-            ->get(self::BASE_URL . '/calendar/' . $year . '/' . $month, [
-                'latitude'  => $location->latitude,
+            ->get(self::BASE_URL.'/calendar/'.$year.'/'.$month, [
+                'latitude' => $location->latitude,
                 'longitude' => $location->longitude,
-                'method'    => self::CALCULATION_METHOD,
+                'method' => self::CALCULATION_METHOD,
             ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \RuntimeException(
                 "Aladhan API mengembalikan status {$response->status()} untuk {$location->city_name}."
             );
@@ -65,30 +65,30 @@ class PrayerScheduleService
                 $gregorian = $dateInfo['gregorian'] ?? [];
 
                 $dateStr = $gregorian['date'] ?? null;
-                if (!$dateStr) {
+                if (! $dateStr) {
                     continue;
                 }
 
                 // Aladhan returns date as "DD-MM-YYYY", convert to "YYYY-MM-DD"
                 $date = $this->convertAladhanDate($dateStr);
-                if (!$date) {
+                if (! $date) {
                     continue;
                 }
 
                 $timeData = [
                     'location_id' => $location->id,
-                    'date'        => $date,
-                    'imsak'       => $this->parseAladhanTime($timings['Imsak'] ?? null),
-                    'subuh'       => $this->parseAladhanTime($timings['Fajr'] ?? null),
-                    'terbit'      => $this->parseAladhanTime($timings['Sunrise'] ?? null),
-                    'dhuha'       => $this->estimateDhuha($timings['Sunrise'] ?? null),
-                    'dzuhur'      => $this->parseAladhanTime($timings['Dhuhr'] ?? null),
-                    'ashar'       => $this->parseAladhanTime($timings['Asr'] ?? null),
-                    'maghrib'     => $this->parseAladhanTime($timings['Maghrib'] ?? null),
-                    'isya'        => $this->parseAladhanTime($timings['Isha'] ?? null),
+                    'date' => $date,
+                    'imsak' => $this->parseAladhanTime($timings['Imsak'] ?? null),
+                    'subuh' => $this->parseAladhanTime($timings['Fajr'] ?? null),
+                    'terbit' => $this->parseAladhanTime($timings['Sunrise'] ?? null),
+                    'dhuha' => $this->estimateDhuha($timings['Sunrise'] ?? null),
+                    'dzuhur' => $this->parseAladhanTime($timings['Dhuhr'] ?? null),
+                    'ashar' => $this->parseAladhanTime($timings['Asr'] ?? null),
+                    'maghrib' => $this->parseAladhanTime($timings['Maghrib'] ?? null),
+                    'isya' => $this->parseAladhanTime($timings['Isha'] ?? null),
                 ];
 
-                if (empty($timeData['subuh']) || empty($timeData['dzuhur'])) {
+                if (in_array(null, array_intersect_key($timeData, array_flip(['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'])), true)) {
                     continue;
                 }
 
@@ -111,16 +111,16 @@ class PrayerScheduleService
     /**
      * Aladhan returns times like "04:33 (WIB)" — strip the timezone part.
      */
-    private function parseAladhanTime(?string $value): ?string
+    private function parseAladhanTime(mixed $value): ?string
     {
-        if (!$value) {
+        if (! is_string($value) || $value === '') {
             return null;
         }
 
         $clean = trim(preg_replace('/\s*\(.*\)/', '', $value));
 
-        if (preg_match('/^(\d{2}):(\d{2})/', $clean, $m)) {
-            return $m[1] . ':' . $m[2];
+        if (preg_match('/^([01][0-9]|2[0-3]):([0-5][0-9])$/D', $clean, $m)) {
+            return $m[1].':'.$m[2];
         }
 
         return null;
@@ -135,21 +135,23 @@ class PrayerScheduleService
         if (count($parts) !== 3) {
             return null;
         }
-        return $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+
+        return $parts[2].'-'.$parts[1].'-'.$parts[0];
     }
 
     /**
      * Dhuha ≈ Sunrise + 15 minutes (Aladhan doesn't provide Dhuha directly).
      */
-    private function estimateDhuha(?string $sunriseRaw): ?string
+    private function estimateDhuha(mixed $sunriseRaw): ?string
     {
         $sunrise = $this->parseAladhanTime($sunriseRaw);
-        if (!$sunrise) {
+        if (! $sunrise) {
             return null;
         }
 
         try {
-            $dt = \Carbon\Carbon::createFromFormat('H:i', $sunrise);
+            $dt = Carbon::createFromFormat('H:i', $sunrise);
+
             return $dt->addMinutes(15)->format('H:i');
         } catch (\Throwable) {
             return null;
@@ -191,11 +193,11 @@ class PrayerScheduleService
             return $regions;
         }
 
-        $path = database_path("data/indonesian-regions.json");
+        $path = database_path('data/indonesian-regions.json');
         $decoded = json_decode((string) file_get_contents($path), true);
 
-        if (!is_array($decoded) || $decoded === []) {
-            throw new \RuntimeException("Data wilayah Indonesia tidak dapat dibaca.");
+        if (! is_array($decoded) || $decoded === []) {
+            throw new \RuntimeException('Data wilayah Indonesia tidak dapat dibaca.');
         }
 
         $regions = $decoded;

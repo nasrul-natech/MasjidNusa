@@ -49,6 +49,7 @@ class CampaignAdminController extends Controller
         $verifiedSum = $verifiedCount = $pendingSum = $pendingCount = 0;
         $isDivergent = false;
         $recentDonations = collect();
+
         return view('admin.keuangan.campaigns.form', compact(
             'campaign', 'categories',
             'verifiedSum', 'verifiedCount', 'pendingSum', 'pendingCount',
@@ -71,7 +72,8 @@ class CampaignAdminController extends Controller
             'banner' => ['nullable', 'image', 'max:4096'],
         ]);
 
-        $data['slug'] = Str::slug($data['title']) . '-' . time();
+        $suffix = '-'.time();
+        $data['slug'] = substr(Str::slug($data['title']), 0, 255 - strlen($suffix)).$suffix;
         $data['collected_amount'] = 0;
         $data['is_featured'] = $request->boolean('is_featured');
 
@@ -107,11 +109,11 @@ class CampaignAdminController extends Controller
     {
         $categories = DonationCategory::orderBy('name')->get();
 
-        $verifiedSum   = (int) $campaign->donations()->whereIn('status', ['verified', 'paid'])->sum('amount');
+        $verifiedSum = (int) $campaign->donations()->whereIn('status', ['verified', 'paid'])->sum('amount');
         $verifiedCount = $campaign->donations()->whereIn('status', ['verified', 'paid'])->count();
-        $pendingSum    = (int) $campaign->donations()->where('status', 'waiting_verification')->sum('amount');
-        $pendingCount  = $campaign->donations()->where('status', 'waiting_verification')->count();
-        $isDivergent   = $campaign->collected_amount !== $verifiedSum;
+        $pendingSum = (int) $campaign->donations()->where('status', 'waiting_verification')->sum('amount');
+        $pendingCount = $campaign->donations()->where('status', 'waiting_verification')->count();
+        $isDivergent = $campaign->collected_amount !== $verifiedSum;
         $recentDonations = $campaign->donations()
             ->whereIn('status', ['verified', 'paid'])
             ->orderByDesc('updated_at')
@@ -174,8 +176,9 @@ class CampaignAdminController extends Controller
 
     public function toggleFeatured(DonationCampaign $campaign)
     {
-        $campaign->update(['is_featured' => !$campaign->is_featured]);
+        $campaign->update(['is_featured' => ! $campaign->is_featured]);
         $status = $campaign->is_featured ? 'ditampilkan di halaman utama' : 'disembunyikan dari halaman utama';
+
         return back()->with('success', "Program \"{$campaign->title}\" berhasil {$status}.");
     }
 
@@ -229,7 +232,7 @@ class CampaignAdminController extends Controller
         $diff = $actualSum - $before;
         $msg = $diff === 0
             ? 'Nilai sudah sinkron, tidak ada perubahan.'
-            : 'Nilai disinkronkan: ' . ($diff > 0 ? '+' : '') . 'Rp ' . number_format($diff, 0, ',', '.') . ' (dari Rp ' . number_format($before, 0, ',', '.') . ' → Rp ' . number_format($actualSum, 0, ',', '.') . ')';
+            : 'Nilai disinkronkan: '.($diff > 0 ? '+' : '').'Rp '.number_format($diff, 0, ',', '.').' (dari Rp '.number_format($before, 0, ',', '.').' → Rp '.number_format($actualSum, 0, ',', '.').')';
 
         return back()->with('success', $msg);
     }

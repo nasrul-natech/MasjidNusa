@@ -38,6 +38,7 @@ class PopupAdController extends Controller
         $activities = Activity::published()->orderBy('start_date')->get();
         $popupAd = null;
         $adType = $request->get('type', 'image');
+
         return view('admin.media-it.popup-ads.form', compact('popupAd', 'activities', 'adType'));
     }
 
@@ -55,7 +56,7 @@ class PopupAdController extends Controller
         ];
 
         if ($request->ad_type === 'link') {
-            $rules['link'] = ['required', 'string'];
+            $rules['link'] = ['required', 'string', 'max:255'];
             $rules['content'] = ['nullable', 'string', 'max:500'];
             $rules['activity_id'] = ['nullable', 'exists:activities,id'];
         }
@@ -75,6 +76,7 @@ class PopupAdController extends Controller
     {
         $activities = Activity::published()->orderBy('start_date')->get();
         $adType = $popupAd->ad_type;
+
         return view('admin.media-it.popup-ads.form', compact('popupAd', 'activities', 'adType'));
     }
 
@@ -92,7 +94,7 @@ class PopupAdController extends Controller
         ];
 
         if ($request->ad_type === 'link') {
-            $rules['link'] = ['required', 'string'];
+            $rules['link'] = ['required', 'string', 'max:255'];
             $rules['content'] = ['nullable', 'string', 'max:500'];
             $rules['activity_id'] = ['nullable', 'exists:activities,id'];
         }
@@ -125,13 +127,15 @@ class PopupAdController extends Controller
             Storage::disk('public')->delete($popupAd->image);
         }
         $popupAd->delete();
+
         return back()->with('success', 'Popup iklan berhasil dihapus.');
     }
 
     public function toggleActive(PopupAd $popupAd)
     {
-        $popupAd->update(['is_active' => !$popupAd->is_active]);
+        $popupAd->update(['is_active' => ! $popupAd->is_active]);
         $status = $popupAd->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
         return back()->with('success', "Popup berhasil {$status}.");
     }
 }

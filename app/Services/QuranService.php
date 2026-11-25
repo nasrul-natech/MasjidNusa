@@ -11,9 +11,7 @@ class QuranService
 {
     private const CACHE_TTL = 86400;
 
-    public function __construct(private readonly QuranApiService $apiService)
-    {
-    }
+    public function __construct(private readonly QuranApiService $apiService) {}
 
     public function isLocalDataAvailable(): bool
     {
@@ -22,7 +20,7 @@ class QuranService
 
     public function getSurahList(): Collection
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->getSurahList();
         }
 
@@ -35,7 +33,7 @@ class QuranService
 
     public function getSurah(int $number): ?object
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->getSurah($number);
         }
 
@@ -46,7 +44,7 @@ class QuranService
 
     public function getAllSurahVerses(int $surahId): Collection
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->getSurahVerses($surahId);
         }
 
@@ -57,20 +55,20 @@ class QuranService
 
     public function getJuzVerses(int $juzNumber): Collection
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->getJuzVerses($juzNumber);
         }
 
         return QuranVerse::where('juz_number', $juzNumber)
             ->with('surah')
-            ->orderBy('surah_id')
+            ->orderBy(Surah::select('number')->whereColumn('surahs.id', 'quran_verses.surah_id'))
             ->orderBy('verse_number')
             ->get();
     }
 
     public function getJuzInfo(): Collection
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->getJuzInfo();
         }
 
@@ -78,7 +76,7 @@ class QuranService
             $data = QuranVerse::selectRaw('juz_number, surah_id, count(*) as verse_count')
                 ->groupBy('juz_number', 'surah_id')
                 ->orderBy('juz_number')
-                ->orderBy('surah_id')
+                ->orderBy(Surah::select('number')->whereColumn('surahs.id', 'quran_verses.surah_id'))
                 ->get();
 
             $surahIds = $data->pluck('surah_id')->unique();
@@ -87,7 +85,8 @@ class QuranService
                 ->keyBy('id');
 
             return $data->groupBy('juz_number')->map(function ($rows, $juzNum) use ($surahs) {
-                $juzSurahs = $rows->map(fn($r) => $surahs->get($r->surah_id))->filter()->unique('id')->values();
+                $juzSurahs = $rows->map(fn ($r) => $surahs->get($r->surah_id))->filter()->unique('id')->values();
+
                 return [
                     'number' => $juzNum,
                     'surahs' => $juzSurahs,
@@ -99,12 +98,12 @@ class QuranService
 
     public function getVerse(int $surahNumber, int $verseNumber): ?object
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->getSurahVerses($surahNumber)
                 ->firstWhere('verse_number', $verseNumber);
         }
 
-        return QuranVerse::whereHas('surah', fn($q) => $q->where('number', $surahNumber))
+        return QuranVerse::whereHas('surah', fn ($q) => $q->where('number', $surahNumber))
             ->where('verse_number', $verseNumber)
             ->with('surah')
             ->first();
@@ -112,7 +111,7 @@ class QuranService
 
     public function search(string $query, string $lang = 'id', int $limit = 30): Collection
     {
-        if (!$this->isLocalDataAvailable()) {
+        if (! $this->isLocalDataAvailable()) {
             return $this->apiService->search($query, $lang, $limit);
         }
 
@@ -121,9 +120,9 @@ class QuranService
         return QuranVerse::with('surah')
             ->where(function ($q) use ($query, $field) {
                 $q->where($field, 'like', "%{$query}%")
-                  ->orWhere('text_transliteration', 'like', "%{$query}%");
+                    ->orWhere('text_transliteration', 'like', "%{$query}%");
             })
-            ->orderBy('surah_id')
+            ->orderBy(Surah::select('number')->whereColumn('surahs.id', 'quran_verses.surah_id'))
             ->orderBy('verse_number')
             ->limit($limit)
             ->get();

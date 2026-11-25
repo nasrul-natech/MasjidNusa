@@ -185,7 +185,7 @@ npm ci
 npm run build
 ```
 
-Jalankan provisioning setelah seeder agar permission fitur baru ditambahkan pada role yang sudah terbentuk. Command bersifat idempoten, tidak mengganti permission lama, dan tidak mengaktifkan modul.
+Seeder role kini menambahkan permission fitur baru setelah role terbentuk. Command provisioning tetap tersedia untuk instalasi lama atau pemeriksaan ulang; bersifat idempoten, tidak mengganti permission lama, dan tidak mengaktifkan modul.
 
 Data Al-Qur'an lokal tidak dimasukkan oleh `DatabaseSeeder`. Bila diperlukan, impor terpisah dengan akses internet:
 
@@ -380,9 +380,21 @@ APP_CONFIG_CACHE=/tmp/masjidnusa-tests-config.php vendor/bin/phpunit --do-not-ca
 
 Cakupan tes meliputi presensi, reward, peringkat jamaah, display, branding, dan settlement donasi. Tes JavaScript display memakai Node test runner tanpa instalasi test framework tambahan.
 
-**Catatan audit 25 November 2026:** PHPUnit menghasilkan 92 tes, 504 assertion, dan 3 kegagalan: perbedaan teks penjelasan peringkat, kapitalisasi label preview, serta `next_prayer.key` yang menghasilkan `imsak` saat tes mengharapkan `subuh`. Tes JavaScript display lulus 24/24. Ini hasil audit lokal, bukan status CI atau jaminan production; periksa kembali setelah perubahan kode.
+Regresi mencakup batas input terhadap skema, kelengkapan jadwal salat, provisioning permission, hierarki organisasi, urutan surah, serta penulisan bookmark/progres. Timeline `next_prayer` dan `previous_prayer` display hanya memakai lima waktu salat; Imsak/Terbit tetap tersedia pada footer. Jalankan tes pada versi kode yang akan dirilis; hasil lokal bukan jaminan production.
 
 SQLite tidak membuktikan perilaku locking MySQL/MariaDB. Uji konkurensi check-in/finalisasi, integrasi pembayaran, browser, serta perangkat TV pada staging yang sesuai production.
+
+### Pemeriksaan Integritas Sebelum Constraint Baru
+
+Command berikut hanya membaca database dan menampilkan jumlah kelompok konflik, tanpa menampilkan identitas atau menghapus data:
+
+```bash
+php artisan system:check-data-integrity
+```
+
+Pemeriksaan mencakup bukti pembayaran ganda per transaksi, bookmark ganda, lebih dari satu posisi bacaan terakhir per pengguna, progres khatam ganda, dan pasangan lokasi e-Quran non-null yang duplikat. Exit code `0` berarti tidak ditemukan konflik pada pemeriksaan tersebut; `1` berarti ada konflik. Hasil bersih bukan bukti seluruh integritas database terjamin atau bebas perubahan bersamaan.
+
+Constraint tambahan belum dipasang otomatis. Jika konflik ditemukan, tinjau data serta keputusan pemulihannya terlebih dahulu; jangan menghapus atau menggabungkan riwayat secara otomatis. Perubahan aplikasi ini tidak membersihkan konflik historis.
 
 ## Deployment Production
 

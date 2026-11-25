@@ -206,7 +206,9 @@ class MosqueDisplayService
         $prayers = $this->prayersForDate($snapshot, $now);
         $tomorrow = $this->prayersForDate($snapshot, $now->addDay());
         $yesterday = $this->prayersForDate($snapshot, $now->subDay());
-        $timeline = collect(array_merge($yesterday, $prayers, $tomorrow))->sortBy('at')->values();
+        $timeline = collect(array_merge($yesterday, $prayers, $tomorrow))
+            ->filter(fn ($prayer) => in_array($prayer['key'], ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'], true))
+            ->sortBy('at')->values();
         $nextPrayer = $timeline->first(fn ($prayer) => CarbonImmutable::parse($prayer['at'])->gt($now));
         $previousPrayer = $timeline->filter(fn ($prayer) => CarbonImmutable::parse($prayer['at'])->lte($now))->last();
         $items = [];

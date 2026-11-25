@@ -23,11 +23,11 @@ class UserController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
         if ($request->role) {
-            $query->whereHas('roles', fn($q) => $q->where('name', $request->role));
+            $query->whereHas('roles', fn ($q) => $q->where('name', $request->role));
         }
         if ($request->status === 'active') {
             $query->where('is_active', true);
@@ -45,6 +45,7 @@ class UserController extends Controller
     {
         $roles = Role::all();
         $user = null;
+
         return view('super-admin.users.form', compact('user', 'roles'));
     }
 
@@ -63,8 +64,8 @@ class UserController extends Controller
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'password' => Hash::make($data['password']),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $user->assignRole($data['role']);
         AuditLog::record('user.created', $user);
@@ -75,6 +76,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $roles = Role::all();
+
         return view('super-admin.users.form', compact('user', 'roles'));
     }
 
@@ -82,7 +84,7 @@ class UserController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string'],
             'role' => ['required', 'exists:roles,name'],
             'is_active' => ['boolean'],
@@ -93,10 +95,10 @@ class UserController extends Controller
             : $user->is_active;
 
         $blocked = false;
-        DB::transaction(function () use ($request, $user, $data, $willBeActive, &$blocked) {
+        DB::transaction(function () use ($user, $data, $willBeActive, &$blocked) {
             $this->lockSuperAdmins();
             $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
-            if (!$fresh) {
+            if (! $fresh) {
                 return;
             }
             if ($this->removesLastActiveSuperAdmin($fresh, $willBeActive && $data['role'] === 'super_admin')) {
@@ -114,7 +116,7 @@ class UserController extends Controller
                 'is_active' => $willBeActive,
             ]);
 
-            if ($wasActive && !$fresh->is_active) {
+            if ($wasActive && ! $fresh->is_active) {
                 $fresh->revokeAccess();
             }
 
@@ -172,18 +174,18 @@ class UserController extends Controller
         DB::transaction(function () use ($user, &$blocked, &$activating) {
             $this->lockSuperAdmins();
             $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
-            if (!$fresh) {
+            if (! $fresh) {
                 return;
             }
-            $activating = !$fresh->is_active;
-            if (!$activating && $this->removesLastActiveSuperAdmin($fresh, false)) {
+            $activating = ! $fresh->is_active;
+            if (! $activating && $this->removesLastActiveSuperAdmin($fresh, false)) {
                 $blocked = true;
 
                 return;
             }
 
             $fresh->update(['is_active' => $activating]);
-            if (!$activating) {
+            if (! $activating) {
                 $fresh->revokeAccess();
             }
             AuditLog::record($activating ? 'user.activated' : 'user.deactivated', $fresh);
@@ -237,7 +239,7 @@ class UserController extends Controller
 
                 foreach ($users as $user) {
                     $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
-                    if (!$fresh || !$fresh->is_active) {
+                    if (! $fresh || ! $fresh->is_active) {
                         $skipped++;
 
                         continue;
@@ -291,7 +293,7 @@ class UserController extends Controller
 
             foreach ($users as $user) {
                 $fresh = User::query()->whereKey($user->id)->lockForUpdate()->first();
-                if (!$fresh || $fresh->hasAttendanceHistory(true)) {
+                if (! $fresh || $fresh->hasAttendanceHistory(true)) {
                     $skipped++;
 
                     continue;
@@ -337,12 +339,12 @@ class UserController extends Controller
 
     private function removesLastActiveSuperAdmin(?User $user, bool $willRemainActiveSuperAdmin): bool
     {
-        if (!$user || !$user->is_active || !$user->hasRole('super_admin')) {
+        if (! $user || ! $user->is_active || ! $user->hasRole('super_admin')) {
             return false;
         }
 
         $active = User::role('super_admin')->where('is_active', true)->count();
 
-        return $active <= 1 && !$willRemainActiveSuperAdmin;
+        return $active <= 1 && ! $willRemainActiveSuperAdmin;
     }
 }

@@ -13,16 +13,14 @@ use Illuminate\Support\Facades\DB;
 
 class PrayerScheduleAdminController extends Controller
 {
-    public function __construct(private readonly PrayerScheduleService $prayerService)
-    {
-    }
+    public function __construct(private readonly PrayerScheduleService $prayerService) {}
 
     public function index(Request $request)
     {
         $locations = PrayerLocation::orderBy('province_name')->orderBy('city_name')->get();
         $selectedLocationId = $request->get('location_id', PrayerLocation::getDefault()?->id);
         $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $year = (int) $request->get('year', now()->year);
 
         $prayerTimes = collect();
         $selectedLocation = null;
@@ -49,6 +47,7 @@ class PrayerScheduleAdminController extends Controller
     public function create()
     {
         $schedule = null;
+
         return view('admin.operasional.prayer-schedule.form', compact('schedule'));
     }
 
@@ -56,13 +55,14 @@ class PrayerScheduleAdminController extends Controller
     {
         $data = $request->validate([
             'prayer_name' => ['required', 'string', 'max:50'],
-            'time'        => ['required', 'date_format:H:i'],
-            'type'        => ['required', 'in:daily,jumat,special'],
-            'notes'       => ['nullable', 'string'],
-            'is_active'   => ['boolean'],
+            'time' => ['required', 'date_format:H:i'],
+            'type' => ['required', 'in:daily,jumat,special'],
+            'notes' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['boolean'],
         ]);
         $data['is_active'] = $request->boolean('is_active');
         PrayerSchedule::create($data);
+
         return redirect()->route('admin.operasional.prayer-schedule.index')
             ->with('success', 'Jadwal sholat berhasil ditambahkan.');
     }
@@ -76,13 +76,14 @@ class PrayerScheduleAdminController extends Controller
     {
         $data = $request->validate([
             'prayer_name' => ['required', 'string', 'max:50'],
-            'time'        => ['required', 'date_format:H:i'],
-            'type'        => ['required', 'in:daily,jumat,special'],
-            'notes'       => ['nullable', 'string'],
-            'is_active'   => ['boolean'],
+            'time' => ['required', 'date_format:H:i'],
+            'type' => ['required', 'in:daily,jumat,special'],
+            'notes' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['boolean'],
         ]);
         $data['is_active'] = $request->boolean('is_active');
         $prayerSchedule->update($data);
+
         return redirect()->route('admin.operasional.prayer-schedule.index')
             ->with('success', 'Jadwal berhasil diperbarui.');
     }
@@ -90,6 +91,7 @@ class PrayerScheduleAdminController extends Controller
     public function destroy(PrayerSchedule $prayerSchedule)
     {
         $prayerSchedule->delete();
+
         return back()->with('success', 'Jadwal dihapus.');
     }
 
@@ -101,6 +103,7 @@ class PrayerScheduleAdminController extends Controller
             ->orderBy('province_name')
             ->orderBy('city_name')
             ->get();
+
         return view('admin.operasional.prayer-schedule.locations', compact('locations'));
     }
 
@@ -108,17 +111,17 @@ class PrayerScheduleAdminController extends Controller
     {
         $data = $request->validate([
             'province_name' => ['required', 'string', 'max:100'],
-            'city_name'     => ['required', 'string', 'max:100'],
-            'latitude'      => ['required', 'numeric', 'between:-90,90'],
-            'longitude'     => ['required', 'numeric', 'between:-180,180'],
-            'is_default'    => ['boolean'],
+            'city_name' => ['required', 'string', 'max:100'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'is_default' => ['boolean'],
         ]);
 
-        $data['is_default']    = $request->boolean('is_default');
+        $data['is_default'] = $request->boolean('is_default');
         $data['equran_province'] = $data['province_name'];
-        $data['equran_city']     = $data['city_name'];
-        $data['province_id']   = '0';
-        $data['city_id']       = '0';
+        $data['equran_city'] = $data['city_name'];
+        $data['province_id'] = '0';
+        $data['city_id'] = '0';
 
         $location = PrayerLocation::updateOrCreate(
             ['equran_province' => $data['province_name'], 'equran_city' => $data['city_name']],
@@ -136,12 +139,14 @@ class PrayerScheduleAdminController extends Controller
     {
         $name = $location->full_name;
         $location->delete();
+
         return back()->with('success', "Lokasi {$name} berhasil dihapus.");
     }
 
     public function setDefaultLocation(PrayerLocation $location)
     {
         $location->setAsDefault();
+
         return back()->with('success', "Lokasi {$location->full_name} dijadikan default.");
     }
 
@@ -151,6 +156,7 @@ class PrayerScheduleAdminController extends Controller
     {
         try {
             $provinces = $this->prayerService->getProvinces();
+
             return response()->json(['data' => $provinces]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 503);
@@ -163,6 +169,7 @@ class PrayerScheduleAdminController extends Controller
 
         try {
             $cities = $this->prayerService->getCities($request->province);
+
             return response()->json(['data' => $cities]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 503);
@@ -174,6 +181,7 @@ class PrayerScheduleAdminController extends Controller
     public function importForm()
     {
         $locations = PrayerLocation::orderBy('province_name')->orderBy('city_name')->get();
+
         return view('admin.operasional.prayer-schedule.import', compact('locations'));
     }
 
@@ -181,30 +189,30 @@ class PrayerScheduleAdminController extends Controller
     {
         $request->validate([
             'location_id' => ['required', 'exists:prayer_locations,id'],
-            'month'       => ['required', 'integer', 'between:1,12'],
-            'year'        => ['required', 'integer', 'between:2020,2080'],
-            'csv_file'    => ['required', 'file', 'mimes:csv,txt', 'max:1024'],
+            'month' => ['required', 'integer', 'between:1,12'],
+            'year' => ['required', 'integer', 'between:2020,2080'],
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:1024'],
         ]);
 
         $location = PrayerLocation::findOrFail($request->location_id);
-        $month    = (int) $request->month;
-        $year     = (int) $request->year;
+        $month = (int) $request->month;
+        $year = (int) $request->year;
 
         try {
-            $file    = $request->file('csv_file');
+            $file = $request->file('csv_file');
             $content = file_get_contents($file->getPathname());
-            $lines   = array_filter(explode("\n", $content), fn($l) => trim($l) !== '');
+            $lines = array_filter(explode("\n", $content), fn ($l) => trim($l) !== '');
 
             if (count($lines) < 2) {
                 return back()->with('error', 'File CSV tidak valid atau kosong.');
             }
 
             $header = str_getcsv(array_shift($lines), ';');
-            $header = array_map(fn($h) => strtolower(trim($h)), $header);
+            $header = array_map(fn ($h) => strtolower(trim($h)), $header);
 
             $columnMap = $this->detectColumns($header);
 
-            if (!$columnMap) {
+            if (! $columnMap) {
                 return back()->with('error', 'Format kolom CSV tidak dikenali. Pastikan menggunakan format Kemenag (Tanggal;Imsak;Subuh;Terbit;Dhuha;Dzuhur;Ashar;Maghrib;Isya).');
             }
 
@@ -213,10 +221,14 @@ class PrayerScheduleAdminController extends Controller
 
             foreach ($lines as $line) {
                 $row = str_getcsv($line, ';');
-                if (count($row) < count($columnMap)) continue;
+                if (count($row) < count($columnMap)) {
+                    continue;
+                }
 
                 $day = (int) trim($row[$columnMap['tanggal']] ?? '');
-                if ($day < 1 || $day > 31) continue;
+                if ($day < 1 || $day > 31) {
+                    continue;
+                }
 
                 try {
                     $date = Carbon::createFromDate($year, $month, $day)->toDateString();
@@ -229,13 +241,15 @@ class PrayerScheduleAdminController extends Controller
                 foreach (['imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya'] as $prayer) {
                     if (isset($columnMap[$prayer], $row[$columnMap[$prayer]])) {
                         $timeVal = trim($row[$columnMap[$prayer]]);
-                        if (preg_match('/^\d{2}:\d{2}$/', $timeVal)) {
+                        if (preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/D', $timeVal)) {
                             $timeData[$prayer] = $timeVal;
                         }
                     }
                 }
 
-                if (empty($timeData['subuh']) || empty($timeData['dzuhur'])) continue;
+                if (array_diff(['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'], array_keys($timeData))) {
+                    continue;
+                }
 
                 PrayerTime::updateOrCreate(
                     ['location_id' => $location->id, 'date' => $date],
@@ -248,13 +262,14 @@ class PrayerScheduleAdminController extends Controller
 
             return redirect()->route('admin.operasional.prayer-schedule.index', [
                 'location_id' => $location->id,
-                'month'       => $month,
-                'year'        => $year,
+                'month' => $month,
+                'year' => $year,
             ])->with('success', "Berhasil mengimpor {$imported} jadwal sholat untuk {$location->full_name} ({$this->getMonthName($month)} {$year}).");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal mengimpor: ' . $e->getMessage());
+
+            return back()->with('error', 'Gagal mengimpor: '.$e->getMessage());
         }
     }
 
@@ -262,25 +277,25 @@ class PrayerScheduleAdminController extends Controller
     {
         $request->validate([
             'location_id' => ['required', 'exists:prayer_locations,id'],
-            'month'       => ['required', 'integer', 'between:1,12'],
-            'year'        => ['required', 'integer', 'between:2020,2080'],
+            'month' => ['required', 'integer', 'between:1,12'],
+            'year' => ['required', 'integer', 'between:2020,2080'],
         ]);
 
         $location = PrayerLocation::findOrFail($request->location_id);
-        $month    = (int) $request->month;
-        $year     = (int) $request->year;
+        $month = (int) $request->month;
+        $year = (int) $request->year;
 
         try {
             $count = $this->prayerService->fetchAndSave($location, $month, $year);
 
             return redirect()->route('admin.operasional.prayer-schedule.index', [
                 'location_id' => $location->id,
-                'month'       => $month,
-                'year'        => $year,
+                'month' => $month,
+                'year' => $year,
             ])->with('success', "Berhasil mengambil {$count} jadwal dari Aladhan API untuk {$location->full_name} ({$this->getMonthName($month)} {$year}).");
 
         } catch (\Throwable $e) {
-            return back()->with('error', 'Gagal mengambil data dari API: ' . $e->getMessage());
+            return back()->with('error', 'Gagal mengambil data dari API: '.$e->getMessage());
         }
     }
 
@@ -288,8 +303,8 @@ class PrayerScheduleAdminController extends Controller
     {
         $request->validate([
             'location_id' => ['required', 'exists:prayer_locations,id'],
-            'month'       => ['required', 'integer', 'between:1,12'],
-            'year'        => ['required', 'integer', 'between:2020,2080'],
+            'month' => ['required', 'integer', 'between:1,12'],
+            'year' => ['required', 'integer', 'between:2020,2080'],
         ]);
 
         $deleted = PrayerTime::where('location_id', $request->location_id)
@@ -307,14 +322,14 @@ class PrayerScheduleAdminController extends Controller
         $map = [];
         $aliases = [
             'tanggal' => ['tanggal', 'tgl', 'date', 'day', 'hari'],
-            'imsak'   => ['imsak', 'imsyak'],
-            'subuh'   => ['subuh', 'shubuh', 'fajr'],
-            'terbit'  => ['terbit', 'syuruq', 'sunrise'],
-            'dhuha'   => ['dhuha', 'duha'],
-            'dzuhur'  => ['dzuhur', 'dhuhur', 'zuhur', 'duhur', 'zuhr'],
-            'ashar'   => ['ashar', 'asar', 'asr'],
+            'imsak' => ['imsak', 'imsyak'],
+            'subuh' => ['subuh', 'shubuh', 'fajr'],
+            'terbit' => ['terbit', 'syuruq', 'sunrise'],
+            'dhuha' => ['dhuha', 'duha'],
+            'dzuhur' => ['dzuhur', 'dhuhur', 'zuhur', 'duhur', 'zuhr'],
+            'ashar' => ['ashar', 'asar', 'asr'],
             'maghrib' => ['maghrib', 'magrib', 'magreb'],
-            'isya'    => ['isya', "isya'", 'isha'],
+            'isya' => ['isya', "isya'", 'isha'],
         ];
 
         foreach ($aliases as $key => $names) {
@@ -329,11 +344,11 @@ class PrayerScheduleAdminController extends Controller
             }
         }
 
-        if (!isset($map['tanggal'])) {
+        if (! isset($map['tanggal'])) {
             $map['tanggal'] = 0;
         }
 
-        return (isset($map['subuh']) && isset($map['dzuhur'])) ? $map : null;
+        return isset($map['subuh'], $map['dzuhur'], $map['ashar'], $map['maghrib'], $map['isya']) ? $map : null;
     }
 
     private function getMonthName(int $month): string
@@ -343,6 +358,7 @@ class PrayerScheduleAdminController extends Controller
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
+
         return $months[$month] ?? '';
     }
 }
