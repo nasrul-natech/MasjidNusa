@@ -1,546 +1,517 @@
-# MasjidNusa — Sistem Informasi Masjid
+# MasjidNusa by natech.id
 
-Platform manajemen masjid berbasis web yang dibangun dengan **Laravel 13**, mencakup informasi publik, manajemen konten, donasi digital, pembacaan Al-Qur'an, jadwal sholat, doa & zikir, hingga panel administrasi multi-peran.
+Sistem informasi dan manajemen masjid berbasis Laravel untuk menghubungkan masjid, umat, dan kebaikan.
+
+**Platform:** MasjidNusa by [natech.id](https://natech.id).
 
 **Tagline:** Menghubungkan Masjid, Umat & Kebaikan
 
----
+MasjidNusa mencakup informasi publik, kegiatan dan dakwah, donasi digital, Al-Qur'an, doa dan zikir, jadwal salat, presensi jamaah, reward kehadiran, serta display informasi masjid untuk layar TV. Pengelolaan dibagi menjadi panel Operasional, Keuangan, Media IT, dan Super Admin.
 
-## Repository
-
-| Metode | URL |
-|--------|-----|
-| **SSH** (disarankan) | `git@github.com:nasrul-natech/MasjidNusa.git` |
-| HTTPS | `https://github.com/nasrul-natech/MasjidNusa.git` |
-
-> Gunakan **SSH** untuk push/pull harian tanpa password. Pastikan SSH key sudah terdaftar di GitHub.
-
-### Workflow Git (Singkat)
-
-```bash
-# Clone (pertama kali)
-git clone git@github.com:nasrul-natech/MasjidNusa.git
-cd MasjidNusa
-
-# Setelah ada perubahan
-git status
-git add .
-git commit -m "deskripsi perubahan"
-git push origin main
-```
-
-### File yang Tidak Di-upload ke Git
-
-Berikut diabaikan otomatis via `.gitignore`:
-
-| Item | Alasan |
-|------|--------|
-| `.env` | Kredensial & konfigurasi lokal |
-| `vendor/`, `node_modules/` | Dependensi (install via Composer/npm) |
-| `storage/` (uploads, logs, cache) | Data runtime & file user |
-| `public/build/` | Hasil build Vite (jalankan `npm run build`) |
-| `.cursor/` | Konfigurasi editor Cursor lokal |
-| `0. referensi/` | Dokumen referensi internal |
-| `.DS_Store` | Metadata macOS |
-
-Salin `.env.example` → `.env` setelah clone, lalu jalankan setup di bawah.
-
----
+> Dokumentasi ini menjelaskan implementasi dalam repository, bukan jaminan bahwa seluruh modul sudah aktif atau terkonfigurasi pada server tertentu. Modul presensi, reward, dan display masjid nonaktif secara default.
 
 ## Daftar Isi
 
-- [Repository](#repository)
-- [Fitur Utama](#fitur-utama)
-- [Teknologi](#teknologi)
-- [Struktur Peran & Akses](#struktur-peran--akses)
-- [Akun Default (Seeder)](#akun-default-seeder)
-- [Instalasi & Setup](#instalasi--setup)
-- [Modul Sistem](#modul-sistem)
-- [Struktur Direktori Penting](#struktur-direktori-penting)
-- [Konfigurasi Pembayaran (Duitku)](#konfigurasi-pembayaran-duitku)
-- [Push Notification (PWA)](#push-notification-pwa)
+- [Fitur Sistem](#fitur-sistem)
+- [Peran dan Akses](#peran-dan-akses)
+- [Teknologi dan Prasyarat](#teknologi-dan-prasyarat)
+- [Instalasi Lokal](#instalasi-lokal)
+- [Akun Demo](#akun-demo)
+- [Modul dan Aktivasi](#modul-dan-aktivasi)
+- [Panduan Fitur Baru](#panduan-fitur-baru)
+- [Konfigurasi Integrasi](#konfigurasi-integrasi)
+- [Operasional Terjadwal](#operasional-terjadwal)
+- [Pengujian](#pengujian)
+- [Deployment Production](#deployment-production)
+- [Struktur Repository](#struktur-repository)
+- [Kebijakan File Git](#kebijakan-file-git)
+- [Troubleshooting](#troubleshooting)
 - [Lisensi](#lisensi)
 
----
+## Fitur Sistem
 
-## Fitur Utama
+### Halaman Publik
 
-### 🌐 Halaman Publik
+- **Beranda:** banner, popup kegiatan, informasi masjid, dan ringkasan jadwal salat.
+- **Kegiatan:** daftar dan detail kegiatan, galeri, serta cerita kegiatan.
+- **Dakwah dan artikel:** konten terbit berdasarkan kategori.
+- **Info masjid:** profil, sejarah masjid, sejarah kepengurusan, dan struktur organisasi.
+- **Jadwal salat:** pemilihan lokasi, pencarian lokasi terdekat, dan jadwal harian.
+- **Doa dan zikir:** teks Arab, latin, terjemahan, dan kategori.
+- **Al-Qur'an:** bacaan per surah, juz, atau ayat, serta pencarian.
+- **Donasi:** kampanye aktif dan detail donasi, bergantung pada modul `donasi`.
+- **Display masjid:** layar informasi publik di `/display-masjid`, bergantung pada modul dan publikasi konfigurasi.
+- **PWA:** manifest, service worker, dan halaman offline. Dukungan ini tidak berarti seluruh fitur tersedia tanpa internet.
+- **Info sistem:** halaman `/info-sistem` untuk informasi platform.
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Beranda** | Tampilan utama dengan banner, popup kegiatan, informasi ringkas masjid, dan widget jadwal sholat |
-| **Jadwal Sholat** | Jadwal sholat harian berbasis lokasi GPS / koordinat masjid (multi-lokasi), termasuk endpoint JSON `/api/prayer-today` |
-| **Kegiatan Masjid** | Daftar dan detail kegiatan (kajian, sosial, peringatan hari besar, dll.) dengan galeri dan cerita kegiatan |
-| **Dakwah & Artikel** | Artikel islami berkatagori (Dakwah, Fiqih, Motivasi, Sejarah Islam, Info Masjid) lengkap dengan rich content |
-| **Donasi** | Daftar kampanye donasi aktif, detail kampanye, dan form donasi |
-| **Info Masjid** | Sejarah masjid, sejarah kepengurusan, dan struktur organisasi berjenjang |
-| **Doa & Zikir** | Katalog doa berkatagori dengan teks Arab, latin, dan terjemahan Indonesia; fitur simpan favorit |
-| **Al-Qur'an Digital** | Baca Al-Qur'an per surah / per juz / per ayat; pencarian ayat; bookmark ayat; catatan last-read; program khatam |
-| **Offline Support** | Halaman offline untuk PWA ketika tidak ada koneksi internet |
+### Pengguna Login
 
-### 👤 Fitur Jamaah (Login)
+- Registrasi, login, lupa/reset password, serta login Google untuk jamaah.
+- Pengelolaan profil dan notifikasi pribadi.
+- Favorit doa, bookmark ayat, posisi bacaan terakhir, dan program khatam.
+- Donasi, riwayat transaksi, serta unggah bukti transfer manual.
+- Pengaturan adzan: lokasi, waktu pengingat, pilihan suara, volume, dan push notification.
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Registrasi & Login** | Daftar akun, masuk, lupa password, dan reset password via email |
-| **Profil** | Edit data profil dan ganti password |
-| **Donasi** | Quick donate, riwayat donasi, upload bukti transfer manual |
-| **Notifikasi** | Pusat notifikasi pribadi, tandai baca / tandai semua baca |
-| **Favorit Doa** | Simpan dan kelola doa favorit |
-| **Bookmark Al-Qur'an** | Bookmark ayat, lanjutkan bacaan terakhir |
-| **Program Khatam** | Mulai program khatam, catat progress per juz/surah |
+Profil, notifikasi, dan fitur bacaan dilindungi autentikasi; tidak semuanya eksklusif untuk role `jamaah`. Presensi dan peringkat memiliki pembatasan jamaah tersendiri.
 
-### 🛠️ Panel Admin Operasional
+### Khusus Jamaah
 
-Diakses melalui `/admin/operasional` — role: `admin_operasional` atau `super_admin`.
+- Check-in kegiatan ketika sesi presensi dibuka operator.
+- Riwayat kehadiran dan total poin.
+- Peringkat kehadiran keseluruhan dan filter periode reward.
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Dashboard** | Ringkasan statistik operasional |
-| **Profil Masjid** | Edit data profil dan informasi masjid |
-| **Sejarah Masjid** | CRUD riwayat sejarah masjid |
-| **Sejarah Kepengurusan** | CRUD periode kepengurusan |
-| **Struktur Organisasi** | CRUD struktur organisasi berjenjang (parent-child) |
-| **Jadwal Sholat** | CRUD jadwal, manajemen lokasi, impor CSV, fetch otomatis dari API (e-Quran), manajemen per bulan |
-| **Doa & Kategori** | CRUD doa (teks Arab, latin, terjemahan) dan kategori doa |
+Presensi dan peringkat hanya untuk jamaah aktif tanpa peran admin. Akun yang sekaligus memiliki role jamaah dan admin tidak memenuhi syarat fitur ini.
 
-### 💰 Panel Admin Keuangan
+### Panel Operasional
 
-Diakses melalui `/admin/keuangan` — role: `admin_keuangan` atau `super_admin`.
+Lokasi: `/admin/operasional/dashboard`.
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Dashboard** | Ringkasan statistik donasi dan keuangan |
-| **Kampanye Donasi** | CRUD kampanye, toggle unggulan, penyesuaian dan sinkronisasi target |
-| **Kategori Donasi** | Kelola kategori kampanye donasi |
-| **Daftar Donasi** | Lihat semua transaksi donasi dengan detail |
-| **Verifikasi Pembayaran** | Approve / reject bukti transfer manual |
-| **Rekening Bank** | CRUD rekening bank tujuan donasi |
-| **Konfigurasi Pembayaran** | Atur metode pembayaran yang aktif |
-| **Konfigurasi Duitku** | Atur merchant key, kode merchant, environment (sandbox/live) |
-| **Laporan** | Laporan donasi & pembayaran, ekspor data |
+- Profil, sejarah masjid, sejarah kepengurusan, dan struktur organisasi.
+- Jadwal salat manual, lokasi beserta koordinat, impor CSV, dan pengambilan jadwal bulanan dari API.
+- Doa dan kategori doa.
+- Pembukaan sesi presensi kegiatan sesuai permission.
+- Periode reward, pratinjau peringkat, aktivasi/finalisasi, dan pencatatan penyerahan hadiah.
 
-### 📢 Panel Admin Media IT
+### Panel Keuangan
 
-Diakses melalui `/admin/media-it` — role: `admin_media_it` atau `super_admin`.
+Lokasi: `/admin/keuangan/dashboard`. Panel bergantung pada modul `donasi`.
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Dashboard** | Ringkasan konten dan aktivitas |
-| **Kegiatan** | CRUD kegiatan + galeri + cerita; publish/unpublish |
-| **Artikel** | CRUD artikel dengan rich text editor; publish/unpublish |
-| **Banner** | CRUD banner halaman beranda (tipe: gambar / carousel) |
-| **Popup Iklan** | CRUD popup iklan terhubung ke kegiatan, toggle aktif/nonaktif, pengaturan tipe dan durasi |
-| **Kirim Notifikasi** | Broadcast push notification ke semua subscriber |
+- Kampanye dan kategori donasi, target, serta status unggulan.
+- Daftar transaksi dan detail donasi.
+- Verifikasi atau penolakan bukti pembayaran manual.
+- Rekening bank dan metode pembayaran.
+- Konfigurasi Duitku.
+- Laporan dan ekspor data keuangan.
 
-### ⚙️ Panel Super Admin
+### Panel Media IT
 
-Diakses melalui `/super-admin` — role: `super_admin`.
+Lokasi: `/admin/media-it/dashboard`.
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Dashboard** | Ringkasan keseluruhan sistem |
-| **Manajemen Pengguna** | CRUD pengguna, toggle aktif/nonaktif, reset password |
-| **Manajemen Peran** | Assign peran ke pengguna |
-| **Konfigurasi SMTP** | Atur server email, test kirim email |
-| **Template Email** | CRUD template email (selamat datang, reset password, konfirmasi donasi, dll.) dengan placeholder dinamis |
-| **Aturan Pembayaran** | Atur aturan global pembayaran (biaya admin, batas minimum, dll.) |
-| **Pengaturan Sistem** | Kelola pengaturan global (nama app, tagline, warna utama, dll.) |
-| **Modul Sistem** | Toggle aktif/nonaktif modul (Donasi, Push Notification, Popup Iklan, dll.) |
-| **Branding** | Ubah nama, logo, warna tema aplikasi |
-| **Audit Log** | Riwayat semua aktivitas admin, dengan fitur purge log |
+- Kegiatan, galeri, cerita, artikel, dan publikasi konten.
+- Banner serta popup iklan kegiatan.
+- Broadcast push notification.
+- Pengaturan presensi per kegiatan dan aksi penyelesaian kegiatan untuk membuka sesi check-in.
+- Pengaturan display masjid, playlist, preview, dan publish.
 
----
+### Panel Super Admin
 
-## Teknologi
+Lokasi: `/super-admin/dashboard`.
 
-### Backend
-- **PHP 8.3+** dengan **Laravel 13**
-- **Spatie Laravel Permission** v8 — manajemen peran dan izin berbasis database
-- **Intervention Image** v3 — pemrosesan gambar (resize, crop, compress)
-- **Laravel WebPush** v12 — push notification via Web Push Protocol
-- **Duitku Payment Gateway** — integrasi pembayaran online (via DuitkuService)
-- **e-Quran API** — sumber data Al-Qur'an dan jadwal sholat
+- Pengguna, peran, status akun, dan reset password.
+- SMTP dan pengujian email, serta template email.
+- Aturan pembayaran global.
+- Pengaturan sistem, modul, dan branding.
+- Audit log.
+- Akses lintas panel sesuai pemeriksaan permission pada route.
+
+## Peran dan Akses
+
+- `super_admin`: administrasi sistem dan akses lintas panel.
+- `admin_operasional`: informasi masjid, jadwal salat, doa, serta presensi/reward sesuai izin.
+- `admin_keuangan`: donasi, verifikasi, pembayaran, dan laporan.
+- `admin_media_it`: konten, notifikasi, pengaturan presensi kegiatan, dan display.
+- `jamaah`: fitur pengguna serta presensi/peringkat sesuai kelayakan akun.
+
+Panel admin memerlukan **login, verifikasi 2FA, role yang sesuai, dan permission terkait**. Role saja tidak menggantikan pemeriksaan permission. Status modul juga dapat membatasi akses.
+
+Permission dasar berasal dari `RolesAndPermissionsSeeder`. Permission presensi, reward, dan display dikelola melalui `AttendanceFeaturePermissions` dan command provisioning. Middleware `role`, `permission`, `module`, serta `new-feature` memiliki fungsi berbeda.
+
+Admin wajib menggunakan login email/password dan 2FA. Login Google tidak digunakan untuk masuk sebagai admin.
+
+## Teknologi dan Prasyarat
+
+### Backend dan Data
+
+- Laravel 13; versi terkunci saat pembaruan dokumentasi: `13.29.0`.
+- **PHP >=8.4.1 untuk `composer.lock` saat ini.** Constraint root `composer.json` masih `^8.3`, tetapi dependensi Symfony terkunci membutuhkan versi lebih tinggi.
+- Composer 2 dengan runtime API yang memenuhi lockfile. Periksa melalui `composer check-platform-reqs --lock`.
+- MySQL/MariaDB untuk instalasi aplikasi; `.env.example` memakai MySQL.
+- SQLite untuk pengujian otomatis dalam memori.
+- Spatie Laravel Permission 8, Laravel Socialite 5, Google2FA 8, Bacon QR Code 3, Intervention Image 3, dan Laravel WebPush 12.
+- Duitku untuk pembayaran; Aladhan dengan metode Kemenag untuk jadwal salat. Command impor Al-Qur'an menggunakan Quran.com API v4.
 
 ### Frontend
-- **Tailwind CSS 4** + `@tailwindcss/forms` + `@tailwindcss/typography`
-- **Alpine.js** — reaktivitas UI ringan
-- **Vite** — bundler modern dengan hot-reload
-- **Blade Components** — komponen UI modular (sidebar, navbar, modal, dll.)
-- **PWA-ready** — service worker, manifest, offline page
 
-### Database
-- **MySQL / MariaDB** (rekomendasi production)
-- **SQLite** (default `.env.example`, cocok untuk development)
+- Blade, Tailwind CSS 4, Alpine.js 3, Tom Select, dan Axios.
+- Vite 7 dengan Laravel Vite Plugin 2.
+- **Node.js `^20.19.0 || >=22.12.0`** dan npm untuk instalasi/build aset sesuai lockfile.
+- HTTPS untuk deployment publik, OAuth, dan fitur browser seperti push notification.
 
----
+Pastikan ekstensi PHP memenuhi Composer, termasuk ekstensi XML, cURL, fileinfo, dan driver PDO database yang digunakan. Pemrosesan gambar memerlukan driver gambar yang sesuai, seperti GD atau Imagick. Kebutuhan kode aplikasi dan driver database tetap perlu diperiksa selain hasil Composer.
 
-## Struktur Peran & Akses
+## Instalasi Lokal
 
-```
-super_admin
-  └── Akses penuh ke semua panel + konfigurasi sistem
-
-admin_operasional
-  └── Panel operasional: profil masjid, jadwal sholat, doa
-
-admin_keuangan
-  └── Panel keuangan: kampanye, donasi, pembayaran, laporan
-
-admin_media_it
-  └── Panel media IT: kegiatan, artikel, banner, notifikasi
-
-jamaah
-  └── Publik + donasi + profil + favorit + bookmark + khatam
-```
-
-Setiap peran memiliki set **permissions** Spatie yang terdefinisi di `RolesAndPermissionsSeeder`, dipakai oleh middleware `role` dan `module` di semua route terproteksi.
-
----
-
-## Akun Default (Seeder)
-
-> ⚠️ **Ganti password segera setelah deploy ke production!**
-
-| Nama | Email | Password | Peran |
-|------|-------|----------|-------|
-| Super Admin | `superadmin@masjidnusa.id` | `password` | super_admin |
-| Admin Operasional | `operasional@masjidnusa.id` | `password` | admin_operasional |
-| Admin Keuangan | `keuangan@masjidnusa.id` | `password` | admin_keuangan |
-| Admin Media IT | `mediait@masjidnusa.id` | `password` | admin_media_it |
-| Jamaah Demo | `jamaah@masjidnusa.id` | `password` | jamaah |
-
----
-
-## Instalasi & Setup
-
-### Prasyarat
-
-- PHP >= 8.3 (dengan ekstensi: `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `gd`/`imagick`)
-- Composer >= 2.x
-- Node.js >= 18.x + npm
-- MySQL 8+ / MariaDB 10.5+ (atau SQLite untuk dev)
-
-### Langkah Instalasi
+### 1. Ambil Source dan Dependensi
 
 ```bash
-# 1. Clone repository
 git clone git@github.com:nasrul-natech/MasjidNusa.git
 cd MasjidNusa
-
-# 2. Install dependensi PHP
 composer install
-
-# 3. Salin file environment
 cp .env.example .env
-
-# 4. Generate app key
 php artisan key:generate
+```
 
-# 5. Konfigurasi database di .env
-# DB_CONNECTION=mysql
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=Nusa_Masjid
-# DB_USERNAME=root
-# DB_PASSWORD=
+Alternatif URL clone: `https://github.com/nasrul-natech/MasjidNusa.git`.
 
-# 6. Jalankan migrasi & seeder
+### 2. Siapkan Environment dan Database
+
+Buat database lokal terlebih dahulu, lalu sesuaikan `.env`:
+
+```dotenv
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=https://masjidnusa.test
+APP_TIMEZONE=Asia/Jakarta
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=Nusa_Masjid
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Session, cache, dan queue pada contoh environment menggunakan database. Migrasi harus selesai sebelum aplikasi digunakan.
+
+### 3. Inisialisasi Instalasi Development Baru
+
+> Perintah seeder berikut hanya untuk database development baru yang memang ingin diisi data demo. Jangan menggunakannya sebagai langkah update production.
+
+```bash
 php artisan migrate --seed
-
-# 7. Buat symlink storage
+php artisan features:provision-attendance-display
 php artisan storage:link
-
-# 8. Install dependensi frontend
-npm install
-
-# 9. Build assets
-npm run build
-# atau untuk development:
-# npm run dev
-```
-
-### Menjalankan di Laravel Herd
-
-Aplikasi dikonfigurasi untuk diakses via **https://masjidnusa.test** (Herd Secure).
-
-```bash
-# Pastikan site ter-link di Herd, lalu:
-php artisan migrate --seed
+npm ci
 npm run build
 ```
 
-### Menjalankan Secara Lokal (alternatif)
+Jalankan provisioning setelah seeder agar permission fitur baru ditambahkan pada role yang sudah terbentuk. Command bersifat idempoten, tidak mengganti permission lama, dan tidak mengaktifkan modul.
+
+Data Al-Qur'an lokal tidak dimasukkan oleh `DatabaseSeeder`. Bila diperlukan, impor terpisah dengan akses internet:
 
 ```bash
-# Jalankan semua service sekaligus (via script composer)
+php artisan quran:seed
+```
+
+Command tersebut menulis data Al-Qur'an ke database. Jangan memakai opsi `--fresh` sebagai langkah rutin.
+
+### 4. Jalankan Aplikasi
+
+**Laravel Herd:** hubungkan folder sebagai site `masjidnusa`, gunakan PHP yang memenuhi lockfile, dan aktifkan HTTPS agar sesuai `APP_URL`. Akses `https://masjidnusa.test`.
+
+**Tanpa Herd:** sesuaikan `APP_URL=http://localhost:8000`, kemudian jalankan:
+
+```bash
 composer run dev
-
-# atau manual:
-php artisan serve          # Backend di http://localhost:8000
-npm run dev                # Frontend hot-reload
-php artisan queue:work     # Queue worker (notifikasi, email)
 ```
 
----
+Script tersebut menjalankan server Laravel, queue listener, log viewer, dan Vite. Alternatifnya, jalankan proses berikut di terminal terpisah:
 
-## Modul Sistem
-
-Modul dapat diaktifkan/dinonaktifkan oleh Super Admin tanpa mengubah kode:
-
-| Modul | Slug | Inti? |
-|-------|------|-------|
-| Kegiatan | `kegiatan` | Ya |
-| Dakwah & Artikel | `artikel` | Ya |
-| Donasi | `donasi` | Tidak |
-| Push Notification | `push_notification` | Tidak |
-| Popup Iklan | `popup_ads` | Tidak |
-
-Middleware `module` digunakan pada route untuk memeriksa apakah modul aktif sebelum menampilkan halaman.
-
----
-
-## Konfigurasi Pembayaran (Duitku)
-
-1. Daftar akun merchant di [Duitku](https://www.duitku.com)
-2. Masukkan kredensial di **Panel Super Admin → Konfigurasi Duitku** atau via seeder
-3. Set environment: `sandbox` (testing) atau `live` (production)
-4. Webhook Duitku di-handle oleh `POST /webhook/duitku/callback`
-5. Return URL: `GET /webhook/duitku/return`
-
-Variabel `.env` yang dibutuhkan:
-```env
-DUITKU_MERCHANT_CODE=your_merchant_code
-DUITKU_API_KEY=your_api_key
-DUITKU_ENV=sandbox  # atau live
+```bash
+php artisan serve
+npm run dev
+php artisan queue:work
+php artisan schedule:work
 ```
 
----
+Scheduler diperlukan untuk pengingat adzan dan pengambilan jadwal otomatis; `composer run dev` tidak menjalankannya.
 
-## Push Notification (PWA)
+## Akun Demo
 
-1. Generate VAPID keys:
-   ```bash
-   php artisan webpush:vapid
-   ```
-2. Tambahkan ke `.env`:
-   ```env
-   VAPID_PUBLIC_KEY=your_public_key
-   VAPID_PRIVATE_KEY=your_private_key
-   ```
-3. Jamaah dapat subscribe push notification dari halaman profil
-4. Admin Media IT dapat broadcast notifikasi dari panel **Kirim Notifikasi**
+`UserSeeder` menyediakan akun berikut dengan password **`password`** untuk development:
 
----
+- Super Admin: `superadmin@masjidnusa.id`.
+- Admin Operasional: `operasional@masjidnusa.id`.
+- Admin Keuangan: `keuangan@masjidnusa.id`.
+- Admin Media IT: `mediait@masjidnusa.id`.
+- Jamaah Demo: `jamaah@masjidnusa.id`.
 
-## Login Google (Jamaah — Tanpa Password)
+> Jangan mengekspos akun demo dengan password bawaan ke internet. `UserSeeder` menggunakan `updateOrCreate` dan `syncRoles`; menjalankannya ulang dapat mengganti password serta peran akun bawaan. Siapkan akun production melalui prosedur provisioning yang ditinjau, gunakan password unik, dan selesaikan setup 2FA admin.
 
-Jamaah dapat **masuk atau daftar** langsung via akun Gmail tanpa membuat password. Admin tetap wajib login email + password + 2FA.
+## Modul dan Aktivasi
 
-### Langkah 1 — Buat OAuth Client di Google Cloud
+Modul dikelola melalui panel Super Admin. Daftar modul dalam kode:
 
-1. Buka [Google Cloud Console](https://console.cloud.google.com/)
-2. Buat project baru (atau pilih project existing) → misal: `MasjidNusa`
-3. Menu **APIs & Services → OAuth consent screen**
-   - User Type: **External** (untuk publik) atau Internal (organisasi)
-   - App name: `MasjidNusa`
-   - User support email: email admin
-   - Authorized domains: `masjidnusa.test` (dev) dan domain production
-   - Scopes: cukup `email`, `profile`, `openid` (default)
-4. Menu **APIs & Services → Credentials → Create Credentials → OAuth client ID**
-   - Application type: **Web application**
-   - Name: `MasjidNusa Web`
-   - **Authorized redirect URIs** (penting — harus exact match):
-     - Dev (Herd): `https://masjidnusa.test/auth/google/callback`
-     - Production: `https://domain-anda.com/auth/google/callback`
-5. Salin **Client ID** dan **Client Secret**
+- `kegiatan`: modul inti kegiatan.
+- `artikel`: modul inti dakwah/artikel.
+- `donasi`: donasi dan panel keuangan.
+- `push_notification`: push notification.
+- `popup_ads`: popup iklan.
+- `activity_attendance`: presensi kegiatan, **default nonaktif**.
+- `attendance_rewards`: reward kehadiran, **default nonaktif**, memerlukan `activity_attendance` aktif.
+- `mosque_display`: display masjid, **default nonaktif**.
 
-### Langkah 2 — Konfigurasi `.env`
+Untuk melengkapi permission fitur baru pada role yang sudah ada:
 
-```env
-GOOGLE_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxx
+```bash
+php artisan features:provision-attendance-display
+```
+
+Provisioning permission tidak sama dengan aktivasi modul. Presensi masih perlu diaktifkan per kegiatan, sedangkan display membutuhkan publikasi konfigurasi.
+
+Route dengan middleware modul lama dapat mengembalikan `503` saat modul dinonaktifkan. Route fitur baru mengembalikan `404` saat fitur tidak tersedia atau nonaktif. Perilaku ini bukan otomatis berarti route hilang dari kode.
+
+## Panduan Fitur Baru
+
+### Presensi Kegiatan
+
+1. Super Admin mengaktifkan `activity_attendance` setelah pengujian dan persetujuan operator.
+2. Media IT membuat atau mengedit kegiatan, mengaktifkan presensi, dan menetapkan durasi check-in 1-30 menit.
+3. Kegiatan harus sudah terbit dan waktu mulai sudah tercapai sebelum operator membuka sesi. Operasional memiliki route pembukaan sesuai permission; Media IT dapat membuka sesi melalui aksi penyelesaian kegiatan.
+4. Jamaah aktif tanpa peran admin melakukan check-in selama sesi terbuka. Satu check-in dihitung satu poin; pengulangan tidak menambah catatan yang sama.
+5. Jamaah melihat riwayat di `/user/kehadiran` dan peringkat di `/user/kehadiran/peringkat`.
+
+Sesi tidak terbuka otomatis hanya karena jadwal kegiatan tercapai. Pengaturan presensi terkunci setelah sesi dibuka. Check-in berbasis login dan tombol, **bukan verifikasi kehadiran fisik dengan GPS atau QR**.
+
+### Reward Kehadiran
+
+1. Aktifkan `activity_attendance` dan `attendance_rewards`.
+2. Operator berizin membuat periode dengan tanggal, timezone, dan pilihan 3 atau 10 pemenang.
+3. Tinjau peringkat, kemudian aktifkan periode. Alur status: `draft`, `active`, `final`.
+4. Finalisasi sesuai aturan cut-off dan pastikan tidak ada sesi presensi terbuka dalam rentang periode. Finalisasi menyimpan snapshot hasil.
+5. Catat status hadiah sebagai `pending`, `ready`, atau `delivered`. Status `delivered` tidak dapat diubah kembali.
+
+Peringkat memakai jumlah check-in; seri diurutkan menurut waktu pencapaian lebih awal, lalu ID pengguna. Finalisasi bukan pembayaran otomatis. Nama dan poin peringkat ditujukan bagi jamaah yang login, bukan untuk TV publik.
+
+### Display Masjid
+
+1. Aktifkan `mosque_display` dan pastikan pengelola memiliki permission terkait.
+2. Buka `/admin/media-it/mosque-display` untuk mengatur identitas, tema, layout, lokasi jadwal salat, pengumuman, dan playlist.
+3. Tambahkan foto atau video YouTube, urutan, durasi, serta rentang tayang bila diperlukan.
+4. Periksa draft melalui preview. Layout tersedia: `focus`, `split`, dan `immersive`; media mendukung `contain` atau `cover`.
+5. Publish konfigurasi, lalu buka `/display-masjid` pada browser TV. Perubahan draft berikutnya tidak mengubah tampilan publik sebelum dipublikasikan lagi.
+
+Mode visual adzan, hitung mundur iqamah, dan tampilan saat salat memerlukan pengaturan tersendiri. Simulasi mode tersedia pada preview admin, bukan sebagai mode simulasi publik.
+
+Feed publik berada di `/display-masjid/feed` dan belum tersedia sebelum publikasi pertama. YouTube membutuhkan internet; autoplay, audio, dan fullscreen mengikuti izin browser/perangkat. Cache display bukan jaminan semua media dan jadwal tetap tersedia atau valid saat offline. Uji langsung pada TV tujuan sebelum digunakan.
+
+## Konfigurasi Integrasi
+
+### Jadwal Salat
+
+Kelola lokasi dan koordinat melalui panel Operasional. Pengambilan jadwal bulanan memakai Aladhan dengan metode Kemenag (method 20). Jadwal manual dan impor CSV juga tersedia.
+
+Untuk mengambil jadwal bulan tertentu:
+
+```bash
+php artisan prayer:fetch-schedules --month=11 --year=2026
+```
+
+Sesuaikan bulan/tahun; tambahkan `--location=ID` untuk satu lokasi. Tanpa bulan/tahun, command mengambil bulan berikutnya. Pastikan jadwal bulan berjalan sudah tersedia saat instalasi pertama, serta tinjau koordinat dan timezone lokasi.
+
+### Email dan SMTP
+
+`.env.example` memakai `MAIL_MAILER=log`; email tidak dikirim ke penerima melalui SMTP pada konfigurasi awal tersebut. Super Admin dapat mengelola konfigurasi SMTP dan menguji pengiriman melalui panel.
+
+Konfigurasikan pengirim yang valid sebelum mengandalkan reset password atau notifikasi email. Jangan memasukkan kredensial SMTP ke Git.
+
+### Login Google
+
+1. Siapkan OAuth consent screen dan OAuth client bertipe Web application di [Google Cloud Console](https://console.cloud.google.com/).
+2. Gunakan scope identitas `openid`, `email`, dan `profile`. Atur audience dan test users sesuai status aplikasi Google.
+3. Daftarkan redirect URI persis sesuai environment, misalnya `https://masjidnusa.test/auth/google/callback` untuk lokal dan `https://domain-anda.com/auth/google/callback` untuk production.
+4. Isi variabel berikut pada `.env`, lalu segarkan cache konfigurasi.
+
+```dotenv
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
 ```
 
-Jalankan:
 ```bash
 php artisan config:clear
 ```
 
-### Langkah 3 — Verifikasi
+Uji login dan pendaftaran jamaah dari `/login`. Jangan memasukkan domain `.test` sebagai authorized domain production di Google. Admin tetap memakai email/password dan 2FA.
 
-1. Buka `https://masjidnusa.test/login`
-2. Tombol **"Masuk dengan Google"** harus tampil
-3. Klik → redirect ke Google → pilih akun Gmail → kembali ke beranda
-4. User baru otomatis terdaftar sebagai role **jamaah**
+### Pembayaran Duitku
 
-### Alur Sistem
+1. Siapkan akun merchant Duitku dan aktifkan modul `donasi`.
+2. Buka **Admin Keuangan > Konfigurasi Duitku** menggunakan akun berizin. Super Admin dapat mengakses melalui panel tersebut.
+3. Isi kode merchant, API key, dan konfigurasi terkait. Nilai environment aplikasi adalah **`sandbox`** atau **`production`**.
+4. Konfigurasikan callback `POST /webhook/duitku/callback` dan return `GET /webhook/duitku/return` memakai domain HTTPS yang dapat dijangkau.
+5. Uji transaksi sandbox, callback, dan perubahan status sebelum memakai konfigurasi production.
 
-```
-Jamaah klik "Masuk/Daftar dengan Google"
-  → Redirect ke Google OAuth
-  → Google callback ke /auth/google/callback
-  → Jika email baru → buat user jamaah + welcome email
-  → Jika email ada (jamaah) → login langsung
-  → Jika email admin → ditolak (wajib 2FA)
-```
+`DuitkuService` membaca konfigurasi aktif dari database melalui `DuitkuConfig`. Variabel `DUITKU_*` masih ada pada `.env.example`, tetapi mengisinya saja bukan pengganti konfigurasi aktif di panel.
 
-### Catatan Keamanan
+Bukti transfer manual adalah dokumen privat. Command `php artisan proofs:privatize` tersedia untuk memindahkan bukti lama dari disk publik; lakukan backup dan tinjau kebutuhan migrasi berkas sebelum menjalankannya pada data berjalan.
 
-- Akun admin **tidak bisa** login via Google
-- Jamaah terdaftar via Google yang coba login password → pesan arahkan ke Google
-- Avatar Google otomatis disimpan ke storage
-- Semua event tercatat di audit log
+### PWA, Push, dan Adzan
 
----
+1. Gunakan HTTPS dan browser yang mendukung service worker serta Web Push.
+2. Generate VAPID keys pada environment tujuan dengan `php artisan webpush:vapid`, lalu pastikan konfigurasi VAPID terisi.
+3. Aktifkan modul `push_notification` dan minta izin notifikasi dari pengguna.
+4. Pengguna mengatur lokasi dan preferensi di `/user/adzan-settings`; Media IT dapat mengirim broadcast melalui panel notifikasi.
+5. Jalankan scheduler dan queue worker sesuai konfigurasi aplikasi.
 
-## Struktur Direktori Penting
-
-```
-app/
-├── Http/
-│   ├── Controllers/
-│   │   ├── Admin/Keuangan/      # Controller panel keuangan
-│   │   ├── Admin/MediaIT/       # Controller panel media IT
-│   │   ├── Admin/Operasional/   # Controller panel operasional
-│   │   ├── Api/                 # Push subscription API
-│   │   ├── Auth/                # Login, register, reset password
-│   │   ├── Public/              # Halaman publik
-│   │   ├── SuperAdmin/          # Controller panel super admin
-│   │   ├── User/                # Profil, notifikasi, donasi user
-│   │   └── Webhook/             # Duitku webhook handler
-│   └── Middleware/
-├── Models/                      # 38 Eloquent models
-├── Services/
-│   ├── DuitkuService.php        # Integrasi payment gateway
-│   ├── QuranService.php         # Fetch data Al-Qur'an dari API
-│   ├── NotificationService.php  # Push & in-app notification
-│   └── PrayerScheduleService.php
-database/
-├── migrations/                  # 19 migration files
-├── seeders/
-│   ├── DatabaseSeeder.php       # Entry point seeder
-│   ├── UserSeeder.php           # Akun default semua peran
-│   ├── RolesAndPermissionsSeeder.php
-│   ├── MosqueProfileSeeder.php
-│   ├── DonationSeeder.php
-│   ├── ContentSeeder.php
-│   ├── DoaSeeder.php            # Data doa & kategori
-│   └── ZikirPagiPetangSeeder.php
-resources/views/
-├── public/                      # Halaman publik (beranda, quran, doa, dll.)
-├── admin/
-│   ├── operasional/
-│   ├── keuangan/
-│   └── media-it/
-├── super-admin/
-├── auth/                        # Login, register, reset password
-└── components/                  # Shared Blade components
-routes/
-├── web.php                      # Semua route web (233 baris)
-└── api.php                      # Reserved (belum digunakan)
+```dotenv
+VAPID_SUBJECT=mailto:admin@domain-anda.com
+VAPID_PUBLIC_KEY=your_public_key
+VAPID_PRIVATE_KEY=your_private_key
 ```
 
----
+Pengaturan adzan mendukung suara `simple`, `makkah`, dan `madinah`, volume, pilihan waktu salat, serta pengingat 0-30 menit sebelumnya. Suara pada browser memerlukan interaksi/izin pengguna dan tidak dijamin berjalan ketika browser ditutup. Push bergantung pada izin, subscription, konfigurasi, dan scheduler.
 
-## Deploy ke Hostinger
+## Operasional Terjadwal
 
-Struktur direktori di server (`~/domains/masjid.nusasuite.id/`):
+`routes/console.php` mendefinisikan:
 
-```
-masjid.nusasuite.id/
-├── app/              ← source Laravel (di luar web root, aman)
-│   ├── artisan
-│   ├── public/       ← entry point Laravel
-│   └── storage/
-└── public_html → app/public   ← symlink (web root Hostinger)
-```
+- `adzan:send`: pemeriksaan dan pengiriman pengingat setiap menit.
+- `prayer:fetch-schedules`: pengambilan jadwal bulan berikutnya setiap tanggal 25 pukul 02:00, mengikuti timezone scheduler aplikasi.
 
-### Setup Awal (SSH ke server)
+Development dapat memakai `php artisan schedule:work`. Production memerlukan cron `schedule:run` setiap menit. Queue worker harus dijalankan sebagai proses terkelola bila memakai `QUEUE_CONNECTION=database`.
+
+## Pengujian
 
 ```bash
-cd ~/domains/masjid.nusasuite.id
-
-# 1. Bersihkan placeholder Hostinger
-rm -f DO_NOT_UPLOAD_HERE
-rm -rf public_html
-
-# 2. Clone aplikasi ke folder app/
-git clone git@github.com:nasrul-natech/MasjidNusa.git app
-
-# 3. Symlink web root → Laravel public
-ln -s app/public public_html
-
-# 4. Setup Laravel
-cd app
-cp deploy/hostinger.env.example .env
-nano .env   # isi DB & kredensial production
-
-composer install --no-dev --optimize-autoloader
-php artisan key:generate
-php artisan storage:link
-chmod -R ug+rwx storage bootstrap/cache
-php artisan migrate --seed --force
-npm install && npm run build   # jika npm tersedia di server
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+composer validate --no-check-publish
+composer check-platform-reqs --lock
+composer test
+node --test tests/JavaScript/mosque-display.test.cjs
 ```
 
-Atau jalankan script otomatis:
+PHPUnit dikonfigurasi memakai SQLite `:memory:`. `tests/TestCase.php` menolak database selain database pengujian tersebut untuk mencegah penghapusan data aplikasi.
+
+Jika cache konfigurasi lokal mengganggu pengujian, gunakan path cache terpisah yang belum ada tanpa menonaktifkan pengaman:
 
 ```bash
-cd ~/domains/masjid.nusasuite.id
-git clone git@github.com:nasrul-natech/MasjidNusa.git app
-bash app/deploy/hostinger-setup.sh
+APP_CONFIG_CACHE=/tmp/masjidnusa-tests-config.php vendor/bin/phpunit --do-not-cache-result
 ```
 
-### Update Rutin
+Cakupan tes meliputi presensi, reward, peringkat jamaah, display, branding, dan settlement donasi. Tes JavaScript display memakai Node test runner tanpa instalasi test framework tambahan.
+
+**Catatan audit 25 November 2026:** PHPUnit menghasilkan 92 tes, 504 assertion, dan 3 kegagalan: perbedaan teks penjelasan peringkat, kapitalisasi label preview, serta `next_prayer.key` yang menghasilkan `imsak` saat tes mengharapkan `subuh`. Tes JavaScript display lulus 24/24. Ini hasil audit lokal, bukan status CI atau jaminan production; periksa kembali setelah perubahan kode.
+
+SQLite tidak membuktikan perilaku locking MySQL/MariaDB. Uji konkurensi check-in/finalisasi, integrasi pembayaran, browser, serta perangkat TV pada staging yang sesuai production.
+
+## Deployment Production
+
+Panduan rinci: [Panduan Deploy Hostinger](deploy/PANDUAN-DEPLOY.md).
+
+Struktur server yang digunakan skrip deploy:
+
+```text
+~/domains/masjid.nusasuite.id/
+  app/                  Source Laravel, .env, vendor, dan storage
+    public/             Entry point web
+  public_html           Symlink ke app/public
+```
+
+### Persiapan Wajib
+
+1. Backup database dan media, verifikasi pemulihan, serta catat versi kode/aset sebelum migrasi.
+2. Uji staging dengan database setara production dan data tersanitasi.
+3. Pastikan PHP web, SSH, Composer, cron, dan queue worker memenuhi **PHP >=8.4.1**. PHP web dan CLI Hostinger dapat berbeda. Helper deploy masih dapat memilih PHP 8.3; jangan mengandalkan deteksi helper sebagai bukti kompatibilitas lockfile.
+4. Siapkan `.env` production dengan `APP_ENV=production`, `APP_DEBUG=false`, URL HTTPS, database, dan kredensial integrasi yang benar.
+5. Pertahankan `APP_KEY` instalasi yang sudah berjalan. Jangan melakukan regenerasi key sebagai langkah update karena data terenkripsi dapat tidak terbaca.
+6. Pastikan web root hanya mengarah ke `public/`; jangan mengekspos source, `.env`, atau storage privat.
+
+### Instalasi Baru
+
+Skrip tersedia di `deploy/hostinger-setup.sh`. Tinjau skrip dan isi direktori server sebelum menjalankannya: skrip dapat memindahkan `public_html` lama sebagai backup dan membuat symlink baru. Jangan menghapus web root berisi data secara manual.
+
+Skrip memasang dependensi, menyiapkan environment/storage, menjalankan migrasi, dan membangun cache. **Skrip tidak membuat akun admin dan data awal melalui seeder global.** Siapkan provisioning akun/peran production secara terkontrol sebelum membuka aplikasi untuk publik; lalu jalankan provisioning permission fitur jika role sudah tersedia.
+
+### Update Instalasi Berjalan
+
+Setelah backup, pengujian, dan persetujuan operator:
 
 ```bash
 bash ~/domains/masjid.nusasuite.id/app/deploy/hostinger-update.sh
 ```
 
-### Cron Jobs (wajib)
+Skrip memakai branch `main` secara default; `DOMAIN_DIR`, `BRANCH`, dan `PHP_BIN` dapat disesuaikan. Pastikan `PHP_BIN` dan executable PHP pada `PATH` untuk Composer memakai versi yang kompatibel.
 
-Tambahkan di **hPanel → Advanced → Cron Jobs**:
+Skrip memperbarui kode/dependensi, menjalankan migrasi, memeriksa aset, dan menyegarkan cache. Skrip tidak menyediakan backup atau rollback otomatis. Jika manifest build sudah ada, helper melewati build npm, sehingga kode sumber dan aset yang dikirim harus sudah cocok.
+
+> Jangan menjalankan `migrate:fresh`, `migrate:refresh`, `db:wipe`, atau seeder global pada database production sebagai langkah update. Migrasi biasa juga tetap perlu ditinjau; perintah `migrate` bukan jaminan bahwa semua perubahan skema selalu aman.
+
+### Aset dan Proses Server
+
+- `public/build/manifest.json` dan `public/build/assets/` dilacak Git. Build frontend di lokal dengan `npm ci` dan `npm run build`, lalu kirim manifest beserta seluruh aset yang dirujuk secara konsisten.
+- `deploy/sync-assets.sh` merupakan alternatif sinkronisasi aset. Tinjau target `SSH_HOST`, `SSH_PORT`, dan `REMOTE_APP` sebelum menjalankannya; skrip memakai `rsync --delete` pada direktori build tujuan.
+- Jalankan queue worker melalui pengelola proses sesuai fasilitas hosting. Periksa log dan kegagalan job setelah deploy.
+- Tambahkan cron setiap menit. Contoh berikut mengasumsikan binary PHP Hostinger sudah diverifikasi memenuhi lockfile:
 
 ```cron
-* * * * * cd ~/domains/masjid.nusasuite.id/app && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd ~/domains/masjid.nusasuite.id/app && /opt/alt/php84/usr/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
-### Catatan Hostinger
+Sesuaikan path PHP dan domain dengan server tujuan. Pada Hostinger, jangan menjalankan wrapper Composer sebagai `php $(which composer)`.
 
-| Item | Keterangan |
-|------|------------|
-| **PHP Web vs CLI** | hPanel set PHP 8.4 untuk **web**, tapi SSH default bisa masih 8.2. Cek: `php -v`. Pakai `php84` atau script deploy otomatis |
-| `public_html` | Harus symlink ke `app/public`, bukan copy manual |
-| `storage:link` | Buat `public/storage` → `storage/app/public` (upload user) |
-| `.env` | Hanya di server, jangan di-commit |
-| `APP_DEBUG` | Wajib `false` di production |
-| Database | Buat di hPanel, isi `DB_*` di `.env` |
+Pertahankan modul baru nonaktif saat smoke test login/2FA, kegiatan, jadwal salat, dan donasi. Aktivasi presensi, reward, dan display dilakukan bertahap setelah persetujuan operator. Saat regresi, utamakan nonaktifkan modul; jangan menghapus riwayat kehadiran atau snapshot hadiah.
 
-**Jika `php -v` masih 8.2 di SSH**, jalankan manual dengan PHP 8.4:
+## Struktur Repository
 
-```bash
-php84 -v
-cd ~/domains/masjid.nusasuite.id/app
-export PATH="/opt/alt/php84/usr/bin:$PATH"
-composer install --no-dev --optimize-autoloader
-php artisan config:clear
-php artisan key:generate --force
-php artisan migrate --force
-php artisan config:cache
+```text
+app/
+  Console/Commands/           Jadwal, adzan, impor Quran, dan provisioning
+  Http/Controllers/          Publik, auth, pengguna, admin, dan webhook
+  Http/Middleware/           Autentikasi, 2FA, role, permission, dan modul
+  Models/                    Model data aplikasi
+  Services/                  Jadwal, Quran, Duitku, presensi, reward, display
+  Support/                   Helper keamanan, permission, dan feature gate
+config/                      Konfigurasi framework dan aplikasi
+database/
+  migrations/                Skema dan provisioning fitur
+  seeders/                   Data awal serta akun demo
+deploy/                      Skrip dan panduan Hostinger
+docs/                        Dokumen audit terdahulu
+public/
+  build/                     Manifest dan aset Vite terlacak Git
+  js/mosque-display.js       Player display masjid
+  sw.js                      Service worker
+resources/
+  css/                       Sumber style
+  js/                        JavaScript aplikasi dan PWA
+  views/                     Blade publik, pengguna, admin, dan display
+routes/
+  web.php                    Route utama dan pemuatan route fitur
+  activity-attendance.php    Presensi dan peringkat jamaah
+  attendance-rewards.php     Administrasi reward
+  mosque-display.php         Display publik dan administrasi
+  console.php                Scheduler
+  api.php                    Belum berisi definisi endpoint
+tests/
+  Feature/                   Tes integrasi aplikasi
+  Unit/                      Tes unit
+  JavaScript/                Tes player display
 ```
 
-> **Penting:** Jangan pakai `php $(which composer)` — di Hostinger, `composer` adalah script bash, bukan file PHP.
+Endpoint berawalan `/api/`, seperti `/api/prayer-today` dan `/api/adzan/schedule-today`, juga didefinisikan melalui route web. Awalan URL tersebut bukan berarti autentikasi token API terpisah; operasi web tetap mengikuti middleware dan aturan CSRF masing-masing.
 
----
+## Kebijakan File Git
+
+- Jangan commit `.env`, kredensial, private key, database lokal, atau data pengguna.
+- `vendor/` dan `node_modules/` diabaikan; pasang dari lockfile.
+- Upload, log, session, dan cache runtime di `storage/` diabaikan, selain file penjaga direktori terkait.
+- `public/storage` adalah symlink runtime, bukan sumber upload yang disimpan di Git.
+- Manifest dan aset `public/build/` **disimpan di Git** untuk deployment yang memakai hasil build.
+- `.cursor/`, `.kilo/`, `0. referensi/`, dan metadata OS diabaikan sesuai `.gitignore`.
+
+Folder `0. referensi/` dapat tetap ada di komputer lokal tanpa ikut commit biasa. Aturan ignore tidak menghapus file dari disk atau dari riwayat commit lama.
+
+## Troubleshooting
+
+- **Composer menolak versi PHP:** periksa PHP CLI dan kebutuhan lockfile, bukan hanya versi web pada hosting. Jalankan `composer check-platform-reqs --lock`; jangan melewati platform requirements.
+- **Halaman tanpa CSS/JS:** pastikan `public/build/manifest.json` dan semua file yang dirujuk tersedia dari build yang sama. Build ulang dan kirim aset secara lengkap.
+- **Upload tidak tampil:** periksa `php artisan storage:link`, lokasi upload publik, dan permission direktori. Bukti pembayaran serta media draft tidak boleh dijadikan publik untuk mengatasi masalah akses.
+- **Admin diarahkan ke setup/challenge:** selesaikan 2FA dan periksa role/permission; jangan menonaktifkan middleware.
+- **Fitur baru 404:** periksa provisioning modul, aktivasi, permission, dan dependensinya. Untuk display, periksa publikasi pertama.
+- **Presensi belum tersedia:** periksa kegiatan terbit, waktu mulai, konfigurasi presensi per kegiatan, sesi operator, serta kelayakan akun jamaah.
+- **Jadwal atau adzan kosong:** periksa koordinat, timezone, data bulan berjalan, preferensi pengguna, izin notifikasi, dan scheduler.
+- **Login Google gagal:** cocokkan redirect URI persis, `APP_URL`, OAuth credentials, audience/test users, dan cache konfigurasi.
+- **Email tidak sampai:** pastikan mailer bukan `log`, konfigurasi SMTP valid, pengirim diizinkan, dan proses queue berjalan bila dibutuhkan.
+- **Tes menolak koneksi MySQL:** gunakan konfigurasi pengujian SQLite dalam memori dan path cache terpisah seperti pada bagian pengujian. Jangan melewati pengaman database.
 
 ## Lisensi
 
-Proyek ini dikembangkan untuk **MasjidNusa**. Seluruh hak cipta dilindungi.
+MasjidNusa menggunakan [Lisensi Atribusi MasjidNusa 1.0](LICENSE), dengan identifier `LicenseRef-MasjidNusa-Attribution`. Ini lisensi khusus, bukan MIT standar atau klaim lisensi open-source yang disetujui OSI.
 
----
+- Bebas digunakan, disalin, dimodifikasi, dibagikan, dan dipakai untuk layanan komersial tanpa biaya lisensi.
+- Nama, logo, warna, domain, dan konten masjid boleh diganti melalui UI maupun kode.
+- Kredit **MasjidNusa by natech.id** beserta tautan `https://natech.id` wajib dipertahankan pada footer/area atribusi publik sesuai ketentuan lengkap di `LICENSE`. Kredit tidak boleh dihapus, disembunyikan, atau dibuat tidak terbaca.
+- Distribusi salinan dan versi modifikasi wajib menyertakan lisensi serta pemberitahuan terkait. Modifikasi perlu ditandai; publikasi kode sumber modifikasi tidak diwajibkan.
+- Dependensi dan materi pihak ketiga tetap mengikuti lisensi masing-masing. Izin versi terdahulu yang sudah diberikan secara sah, termasuk MIT, tidak dicabut oleh lisensi ini.
 
-> Dikembangkan dengan ❤️ untuk kemakmuran masjid dan jamaah.
+Kewajiban lisensi tidak berarti footer terkunci secara teknis. Periksa cakupan kredit pada setiap deployment, terutama layout baru dan layar TV. Lisensi ini bukan bukti bahwa seluruh tampilan sudah memenuhi ketentuannya. Tinjauan hukum disarankan sebelum mengandalkannya untuk distribusi komersial atau penegakan hak; teks lengkap `LICENSE` menjadi acuan, bukan ringkasan ini.

@@ -1,0 +1,108 @@
+Lisensi Atribusi MasjidNusa 1.0
+Identifier: LicenseRef-MasjidNusa-Attribution
+Tanggal: 25 November 2026
+
+Copyright (c) 2026 para pemegang hak cipta MasjidNusa.
+Kredit platform: MasjidNusa by natech.id
+Situs pengembang: https://natech.id
+
+1. Cakupan
+
+"Perangkat Lunak" berarti kode dan dokumentasi MasjidNusa yang disertai
+lisensi ini, sejauh pemberi lisensi memiliki hak untuk melisensikannya.
+"Anda" berarti orang atau badan yang menggunakan hak berdasarkan lisensi
+ini. "Distribusi" mencakup pembagian kode sumber, salinan, atau versi
+modifikasi. "Pengoperasian" mencakup penyediaan aplikasi melalui jaringan,
+termasuk layanan hosting atau layanan komersial.
+
+2. Izin
+
+Tanpa biaya lisensi, Anda diizinkan menggunakan, menyalin, mempelajari,
+memodifikasi, menggabungkan, mendistribusikan, dan menjual salinan Perangkat
+Lunak, serta menyediakan layanan berbasis Perangkat Lunak, untuk kebutuhan
+pribadi, organisasi, atau komersial, dengan mematuhi ketentuan berikut.
+Lisensi ini tidak mewajibkan publikasi kode sumber modifikasi.
+
+3. Atribusi pada antarmuka
+
+Pada setiap Pengoperasian atau Distribusi yang menyediakan antarmuka web
+publik MasjidNusa, termasuk versi modifikasi, Anda wajib mempertahankan
+kredit dengan teks persis:
+
+    MasjidNusa by natech.id
+
+Kredit wajib ditampilkan pada footer setiap halaman publik yang memiliki
+footer. Apabila footer dihilangkan atau tata letak diganti, kredit wajib
+tetap ditampilkan pada area atribusi yang terlihat pada halaman tersebut.
+Pada layar publik tanpa footer, termasuk display TV, kredit wajib tersedia
+pada area atribusi yang terlihat saat tampilan informasi normal berjalan;
+kredit boleh tidak ditampilkan selama mode sementara adzan, iqamah,
+salat, atau media fullscreen. Lisensi ini tidak mewajibkan penambahan
+kredit pada setiap halaman panel admin yang hanya dapat diakses setelah
+login, tetapi kredit yang sudah ada tidak boleh dihapus.
+
+Pada antarmuka yang mendukung tautan, teks kredit wajib menautkan ke
+https://natech.id. Pada media noninteraktif yang tidak mendukung tautan,
+alamat natech.id wajib tetap terbaca.
+
+Kredit harus terbaca dengan ukuran dan kontras yang wajar pada desktop
+dan mobile sesuai dukungan antarmuka, tanpa memerlukan login, membuka
+menu, atau tindakan tambahan untuk menampilkannya selain menggulir ke
+footer. Kredit tidak boleh dihapus, diganti identitas lain, disembunyikan
+dengan CSS atau cara lain, dibuat transparan, ditutupi, atau dikaburkan.
+
+4. Penyesuaian identitas masjid
+
+Anda boleh mengganti nama, logo, warna, domain, konten, dan konfigurasi
+masjid melalui UI maupun kode. Anda boleh menambah identitas pengelola
+atau penyedia layanan. Penyesuaian tersebut tidak boleh menghapus atau
+menggantikan kredit platform yang diwajibkan pada bagian 3, dan tidak
+boleh menyatakan bahwa natech.id mendukung atau mengesahkan modifikasi
+Anda tanpa izin terpisah.
+
+5. Ketentuan distribusi
+
+Setiap Distribusi wajib menyertakan salinan lengkap lisensi ini serta
+mempertahankan pemberitahuan hak cipta dan atribusi yang relevan. Versi
+modifikasi wajib diberi keterangan bahwa versi tersebut telah diubah,
+misalnya pada README atau catatan rilis, tanpa harus merinci setiap edit.
+
+Penerima salinan memperoleh izin bagian 2 langsung dari pemberi lisensi
+untuk bagian Perangkat Lunak yang dicakup lisensi ini. Anda tidak boleh
+menghapus kewajiban atribusi atau mengubah lisensi bagian tersebut menjadi
+lisensi yang mengizinkan penghilangan kredit. Hak atas kontribusi baru
+tetap pada pemegang haknya; ketentuan tambahan untuk kontribusi tersebut
+tidak boleh meniadakan hak dan kewajiban atas bagian Perangkat Lunak ini.
+
+6. Hak pihak ketiga dan versi terdahulu
+
+Dependensi, kode, font, gambar, audio, data, dan materi pihak ketiga tetap
+mengikuti lisensi serta hak pemilik masing-masing. Lisensi ini tidak
+memberikan izin atas materi pihak ketiga di luar hak pemberi lisensi.
+Pemberitahuan dan lisensi pihak ketiga harus tetap dipertahankan.
+
+Lisensi ini berlaku pada versi yang disertai lisensi ini dan tidak
+mencabut izin yang sebelumnya telah diberikan secara sah untuk versi
+terdahulu dengan lisensi lain, termasuk MIT. Hak merek atau logo tidak
+diberikan selain penggunaan yang diperlukan untuk atribusi ini.
+
+7. Pelanggaran dan pemulihan
+
+Izin berdasarkan lisensi ini berakhir otomatis apabila Anda melanggar
+ketentuannya. Izin dipulihkan ketika pelanggaran telah diperbaiki,
+kecuali pemberi lisensi telah mengakhiri izin Anda secara tertulis karena
+pelanggaran berulang. Berakhirnya izin Anda tidak membatalkan izin
+penerima salinan lain yang tetap mematuhi lisensi.
+
+8. Tanpa jaminan dan batas tanggung jawab
+
+SEJAUH DIIZINKAN HUKUM YANG BERLAKU, PERANGKAT LUNAK DISEDIAKAN "APA ADANYA",
+TANPA JAMINAN TERSURAT ATAU TERSIRAT, TERMASUK JAMINAN KELAYAKAN DAGANG,
+KESESUAIAN UNTUK TUJUAN TERTENTU, ATAU TIDAK ADANYA PELANGGARAN HAK PIHAK
+LAIN. PEMEGANG HAK CIPTA DAN KONTRIBUTOR TIDAK BERTANGGUNG JAWAB ATAS
+KERUGIAN ATAU TUNTUTAN YANG TIMBUL DARI PENGGUNAAN ATAU KETIDAKMAMPUAN
+MENGGUNAKAN PERANGKAT LUNAK, KECUALI TANGGUNG JAWAB YANG TIDAK DAPAT
+DIKECUALIKAN MENURUT HUKUM YANG BERLAKU.
+
+Anda bertanggung jawab atas keamanan deployment, backup, data pengguna,
+kepatuhan hukum, dan konfigurasi layanan yang Anda operasikan.
